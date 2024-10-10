@@ -1,36 +1,84 @@
-# See https://help.github.com/articles/ignoring-files/ for more about ignoring files.
-
-# dependencies
+# 의존성
 /node_modules
 /.pnp
 .pnp.js
 .yarn/install-state.gz
 
-# testing
+# 테스팅
 /coverage
 
-# next.js
+# Next.js
 /.next/
 /out/
 
-# production
+# 프로덕션 빌드
 /build
 
-# misc
+# 기타
 .DS_Store
 *.pem
 
-# debug
+# 디버그 로그
 npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
 
-# local env files
+# 로컬 환경 파일
 .env*.local
 
-# vercel
+# Vercel
 .vercel
 
-# typescript
+# TypeScript
 *.tsbuildinfo
 next-env.d.ts
+
+# VSCode
+/.vscode/
+
+# 문서
+/docs/
+
+# 운영체제 관련
+Thumbs.db
+
+# IDE 관련
+.idea/
+*.swp
+*.swo
+
+# 로그 파일
+*.log
+
+# 임시 파일
+*.tmp
+*.temp
+
+# 백업 파일
+*.bak
+
+# 환경 변수 파일 (추가적인 보안을 위해)
+.env
+.env.development
+.env.test
+.env.production
+
+# 캐시 디렉토리
+.cache/
+
+# Cypress
+cypress/videos/
+cypress/screenshots/
+
+# 커버리지 리포트
+coverage/
+
+# Storybook 빌드 출력
+storybook-static/
+
+# PWA 관련
+public/sw.js
+public/workbox-*.js
+
+# 사용자 지정 빌드 출력 (필요한 경우)
+/dist/
