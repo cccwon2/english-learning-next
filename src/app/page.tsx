@@ -12,25 +12,23 @@ export default function Home() {
   const [isLoading, setIsLoading] = useState(true);
   const router = useRouter();
 
-  const checkUserSession = useCallback(async () => {
+  const checkUserSession = useCallback(async (userId?: string) => {
+    const storedUserId = userId || localStorage.getItem("userId");
     const name = localStorage.getItem("name");
     const grade = localStorage.getItem("grade");
     const classNum = localStorage.getItem("class");
 
-    if (name && grade && classNum) {
+    if (storedUserId && name && grade && classNum) {
       try {
         const { data } = await supabase
           .from("users")
           .select("id")
-          .eq("name", name)
-          .eq("grade", grade)
-          .eq("class", classNum)
+          .eq("id", storedUserId)
           .single();
 
         if (data) {
           setIsLoggedIn(true);
         } else {
-          // 사용자 정보가 없으면 로컬 스토리지 정보 삭제
           clearLocalStorage();
         }
       } catch (error) {
@@ -46,6 +44,7 @@ export default function Home() {
   }, [checkUserSession]);
 
   const clearLocalStorage = () => {
+    localStorage.removeItem("userId");
     localStorage.removeItem("name");
     localStorage.removeItem("grade");
     localStorage.removeItem("class");

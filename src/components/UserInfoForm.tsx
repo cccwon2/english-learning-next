@@ -4,7 +4,7 @@ import React, { useState } from "react";
 import { supabase } from "@/lib/supabase";
 
 interface UserInfoFormProps {
-  onLoginSuccess: () => Promise<void>;
+  onLoginSuccess: (userId: string) => Promise<void>;
 }
 
 const UserInfoForm: React.FC<UserInfoFormProps> = ({ onLoginSuccess }) => {
@@ -16,7 +16,7 @@ const UserInfoForm: React.FC<UserInfoFormProps> = ({ onLoginSuccess }) => {
     e.preventDefault();
 
     try {
-      const { error } = await supabase
+      const { data, error } = await supabase
         .from("users")
         .upsert({ name, grade: parseInt(grade), class: parseInt(classNumber) })
         .select()
@@ -24,11 +24,14 @@ const UserInfoForm: React.FC<UserInfoFormProps> = ({ onLoginSuccess }) => {
 
       if (error) throw error;
 
-      localStorage.setItem("name", name);
-      localStorage.setItem("grade", grade);
-      localStorage.setItem("class", classNumber);
+      if (data) {
+        localStorage.setItem("userId", data.id);
+        localStorage.setItem("name", name);
+        localStorage.setItem("grade", grade);
+        localStorage.setItem("class", classNumber);
 
-      await onLoginSuccess();
+        await onLoginSuccess(data.id);
+      }
     } catch (error) {
       console.error("Error saving user info:", error);
     }

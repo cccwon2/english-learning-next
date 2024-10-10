@@ -25,7 +25,6 @@ export async function POST(req: Request) {
       );
     }
 
-    // 음성을 텍스트로 변환 (한국어)
     const transcription = await openai.audio.transcriptions.create({
       file: file,
       model: "whisper-1",
@@ -34,20 +33,7 @@ export async function POST(req: Request) {
 
     const koreanText = transcription.text;
 
-    // 한국어 텍스트를 영어로 번역
-    const translationResponse = await axios.post(
-      "https://api-free.deepl.com/v2/translate",
-      null,
-      {
-        params: {
-          auth_key: process.env.DEEPL_API_KEY,
-          text: koreanText,
-          target_lang: "EN",
-        },
-      }
-    );
-
-    const englishText = translationResponse.data.translations[0].text;
+    const englishText = await translateToEnglish(koreanText);
 
     return NextResponse.json({ text: koreanText, englishText: englishText });
   } catch (error) {
@@ -57,4 +43,19 @@ export async function POST(req: Request) {
       { status: 500 }
     );
   }
+}
+
+async function translateToEnglish(text: string): Promise<string> {
+  const response = await axios.post(
+    "https://api-free.deepl.com/v2/translate",
+    null,
+    {
+      params: {
+        auth_key: process.env.DEEPL_API_KEY,
+        text: text,
+        target_lang: "EN",
+      },
+    }
+  );
+  return response.data.translations[0].text;
 }
