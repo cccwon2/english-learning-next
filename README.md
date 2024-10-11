@@ -57,6 +57,7 @@ bun dev
 - TypeScript
 - OpenAI API
 - DeepL API
+- Prisma
 - Supabase
 - React Query
 - Framer Motion
