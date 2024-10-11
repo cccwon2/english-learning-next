@@ -1,113 +1,73 @@
 "use client";
 
-import { useQuery } from "@tanstack/react-query";
-import { supabase } from "@/lib/supabase";
-import Link from "next/link";
-import { ConversationWithUser } from "@/types/Conversation";
 import { useEffect, useState } from "react";
+import { supabase } from "@/lib/supabase";
+import { ConversationWithUser } from "@/types/Conversation";
+import { Session } from "@supabase/supabase-js";
 
 export default function HistoryPage() {
-  const [userId, setUserId] = useState<string | null>(null);
+  const [session, setSession] = useState<Session | null>(null);
+  const [history, setHistory] = useState<ConversationWithUser[]>([]);
 
   useEffect(() => {
-    const name = localStorage.getItem("name");
-    const grade = localStorage.getItem("grade");
-    const classNum = localStorage.getItem("class");
-
-    if (name && grade && classNum) {
-      fetchUserId(name, grade, classNum);
-    }
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      setSession(session);
+      if (session) fetchChatHistory(session.user.id);
+    });
   }, []);
 
-  async function fetchUserId(
-    name: string,
-    grade: string,
-    classNum: string
-  ): Promise<void> {
+  async function fetchChatHistory(userId: string) {
     const { data, error } = await supabase
-      .from("users")
-      .select("id")
-      .eq("name", name)
-      .eq("grade", grade)
-      .eq("class", classNum)
-      .single();
+      .from("conversations")
+      .select(
+        `
+        *,
+        user:users (
+          id,
+          name,
+          grade,
+          class
+        ),
+        translation:conversation_translations (
+          translatedMessage,
+          response,
+          translatedResponse,
+          language
+        )
+      `
+      )
+      .eq("userId", userId)
+      .order("createdAt", { ascending: false });
 
-    if (error) throw error;
-    if (data) setUserId(data.id);
+    if (error) console.error("Error fetching chat history:", error);
+    else setHistory(data as ConversationWithUser[]);
   }
 
-  const {
-    data: history,
-    isLoading,
-    error,
-  } = useQuery(["chatHistory", userId], () => fetchChatHistory(userId), {
-    enabled: !!userId,
-  });
-
-  if (isLoading) return <div>Loading...</div>;
-  if (error) return <div>An error occurred: {(error as Error).message}</div>;
+  if (!session) return <div>로그인 후 히스토리를 볼 수 있습니다.</div>;
 
   return (
     <div className="container mx-auto p-4">
-      <h1 className="text-2xl font-bold mb-4">대화 기록</h1>
-      <Link
-        href="/"
-        className="text-blue-500 hover:underline mb-4 inline-block"
-      >
-        홈으로 돌아가기
-      </Link>
-      <ul className="space-y-4">
-        {history?.map((item: ConversationWithUser) => (
-          <li key={item.id} className="border p-4 rounded-lg">
-            <p className="font-bold">
-              {item.isUserMessage ? "질문" : "답변"}: {item.message}
-            </p>
-            {!item.isUserMessage && item.translation?.translatedResponse && (
-              <p>번역: {item.translation.translatedResponse}</p>
-            )}
-            <p className="text-sm text-gray-500">
-              {item.user.name} ({item.user.grade}학년 {item.user.class}반) -{" "}
-              {new Date(item.createdAt).toLocaleString()}
-            </p>
-            {item.translation?.language && (
-              <p className="text-xs text-gray-400">
-                언어: {item.translation.language}
+      {history.map((conversation) => (
+        <div key={conversation.id} className="mb-4 p-4 border rounded">
+          <p className="font-bold">
+            사용자: {conversation.user?.profile?.name || "알 수 없음"}
+          </p>
+          <p>메시지: {conversation.message}</p>
+          <p>응답: {conversation.translation?.response}</p>
+          {conversation.translation && (
+            <div className="mt-2">
+              <p>
+                번역된 메시지: {conversation.translation?.translatedMessage}
               </p>
-            )}
-          </li>
-        ))}
-      </ul>
+              <p>번역된 응답: {conversation.translation?.translatedResponse}</p>
+              <p>언어: {conversation.translation?.language}</p>
+            </div>
+          )}
+          <p className="text-sm text-gray-500">
+            작성 시간: {new Date(conversation.createdAt).toLocaleString()}
+          </p>
+        </div>
+      ))}
     </div>
   );
-}
-
-async function fetchChatHistory(
-  userId: string | null
-): Promise<ConversationWithUser[]> {
-  if (!userId) return [];
-
-  const { data, error } = await supabase
-    .from("conversations")
-    .select(
-      `
-      *,
-      user (
-        id,
-        name,
-        grade,
-        class
-      ),
-      translation (
-        translatedMessage,
-        response,
-        translatedResponse,
-        language
-      )
-    `
-    )
-    .eq("userId", userId)
-    .order("createdAt", { ascending: false });
-
-  if (error) throw error;
-  return data as ConversationWithUser[];
 }

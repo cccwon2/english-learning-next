@@ -1,45 +1,59 @@
 generator client {
-  provider = "prisma-client-js"
+  provider        = "prisma-client-js"
+  previewFeatures = ["multiSchema"]
 }
 
 datasource db {
-  provider = "postgresql"
-  url      = env("DATABASE_URL")
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
+  schemas   = ["auth", "public"]
 }
 
 model User {
-  id            Int            @id @default(autoincrement())
-  name          String
-  grade         Int
-  class         Int
-  nameSuffix    NameSuffix     @default(A)
-  createdAt     DateTime       @default(now()) @map("created_at")
+  id            String         @id @default(uuid())
+  email         String         @unique
+  createdAt     DateTime       @default(now())
+  updatedAt     DateTime       @updatedAt
   conversations Conversation[]
+  profile       Profile?       @relation("UserProfile")
 
-  @@unique([grade, class, name, nameSuffix])
+  @@schema("auth")
+}
+
+model Profile {
+  id        String   @id @default(uuid())
+  userId    String   @unique
+  name      String?
+  grade     Int?
+  class     Int?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  user      User     @relation("UserProfile", fields: [userId], references: [id])
+
+  @@schema("public")
 }
 
 model Conversation {
   id            Int                      @id @default(autoincrement())
-  userId        Int                      @map("user_id")
   message       String
-  isUserMessage Boolean                  @map("is_user_message")
-  createdAt     DateTime                 @default(now()) @map("created_at")
+  createdAt     DateTime                 @default(now())
+  isUserMessage Boolean
+  userId        String
   user          User                     @relation(fields: [userId], references: [id])
   translation   ConversationTranslation?
+
+  @@schema("public")
 }
 
 model ConversationTranslation {
   id                 Int          @id @default(autoincrement())
-  conversationId     Int          @unique @map("conversation_id")
-  translatedMessage  String?      @map("translated_message")
   response           String?
-  translatedResponse String?      @map("translated_response")
   language           String?
+  conversationId     Int          @unique
+  translatedMessage  String?
+  translatedResponse String?
   conversation       Conversation @relation(fields: [conversationId], references: [id])
-}
 
-enum NameSuffix {
-  A
-  B
+  @@schema("public")
 }

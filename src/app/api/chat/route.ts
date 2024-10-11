@@ -1,12 +1,12 @@
 import { NextResponse } from "next/server";
-import OpenAI from "openai";
-import axios from "axios";
 import { createClient } from "@supabase/supabase-js";
-import { Conversation, ConversationTranslation } from "@/types/Conversation";
+import axios from "axios";
+import { Conversation, ConversationTranslation } from "@prisma/client";
+import OpenAI from "openai";
 
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+  process.env.SUPABASE_SERVICE_ROLE_KEY!
 );
 
 const openai = new OpenAI({
@@ -15,63 +15,26 @@ const openai = new OpenAI({
 
 export async function POST(req: Request) {
   try {
-    const { message, userId, grade, classNumber, name } = await req.json();
+    const { message, userId, grade } = await req.json();
 
-    console.log("Received data:", {
-      message,
-      userId,
-      grade,
-      classNumber,
-      name,
-    });
-
-    if (!message || !userId || !grade || !classNumber || !name) {
-      console.log("Missing fields:", {
-        message,
-        userId,
-        grade,
-        classNumber,
-        name,
-      });
+    if (!message || !userId || !grade) {
       return NextResponse.json(
-        {
-          error: "Missing required fields",
-          missingFields: { message, userId, grade, classNumber, name },
-        },
+        { error: "Missing required fields" },
         { status: 400 }
       );
     }
 
-    console.log("Translating to English...");
     const englishMessage = await translateToEnglish(message);
-    console.log("English translation:", englishMessage);
-
-    console.log("Getting AI response...");
     const englishResponse = await getAIResponse(englishMessage, grade);
-    console.log("AI response:", englishResponse);
-
-    console.log("Translating to Korean...");
     const koreanTranslation = await translateToKorean(englishResponse);
-    console.log("Korean translation:", koreanTranslation);
 
-    console.log("Getting or creating user...");
-    const userIdNumber = await getOrCreateUser(
-      userId,
-      name,
-      grade,
-      classNumber
-    );
-    console.log("User ID:", userIdNumber);
-
-    console.log("Saving conversation...");
     await saveConversation(
-      userIdNumber,
+      userId,
       message,
       englishResponse,
       englishMessage,
       koreanTranslation
     );
-    console.log("Conversation saved successfully");
 
     return NextResponse.json({
       originalMessage: message,
@@ -81,11 +44,8 @@ export async function POST(req: Request) {
     });
   } catch (error) {
     console.error("Error in /api/chat:", error);
-    if (error instanceof Error) {
-      return NextResponse.json({ error: error.message }, { status: 500 });
-    }
     return NextResponse.json(
-      { error: "An unknown error occurred" },
+      { error: "An error occurred while processing your request" },
       { status: 500 }
     );
   }
@@ -182,49 +142,8 @@ async function getAIResponse(message: string, grade: string): Promise<string> {
   }
 }
 
-async function getOrCreateUser(
-  userId: string,
-  name: string,
-  grade: string,
-  classNumber: string
-): Promise<number> {
-  try {
-    const { data: userData, error: userError } = await supabase
-      .from("users")
-      .select("id")
-      .eq("id", userId)
-      .single();
-
-    if (userError && userError.code !== "PGRST116") {
-      throw userError;
-    }
-
-    if (userData) {
-      return userData.id;
-    }
-
-    const { data: newUser, error: insertError } = await supabase
-      .from("users")
-      .insert({
-        id: userId,
-        name,
-        grade,
-        class: classNumber,
-      })
-      .select()
-      .single();
-
-    if (insertError) throw insertError;
-    if (!newUser) throw new Error("Failed to create new user");
-    return newUser.id;
-  } catch (error) {
-    console.error("Error in getOrCreateUser:", error);
-    throw new Error("Failed to get or create user");
-  }
-}
-
 async function saveConversation(
-  userId: number,
+  userId: string,
   message: string,
   englishResponse: string,
   englishMessage: string,
@@ -235,14 +154,18 @@ async function saveConversation(
       .from("conversations")
       .insert([
         {
-          userId: userId,
-          message: message,
+          userId,
+          message,
           isUserMessage: true,
+          id: Date.now(),
+          createdAt: new Date(),
         } as Conversation,
         {
-          userId: userId,
+          userId,
           message: englishResponse,
           isUserMessage: false,
+          id: Date.now(),
+          createdAt: new Date(),
         } as Conversation,
       ])
       .select();

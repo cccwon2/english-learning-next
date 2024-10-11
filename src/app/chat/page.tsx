@@ -4,59 +4,36 @@ import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import ChatInterface from "@/components/ChatInterface";
 import { supabase } from "@/lib/supabase";
+import { Session } from "@supabase/supabase-js";
 
 export default function ChatPage() {
-  const [userInfo, setUserInfo] = useState<{
-    id: string;
-    name: string;
-    grade: string;
-    class: string;
-  } | null>(null);
+  const [session, setSession] = useState<Session | null>(null);
   const router = useRouter();
 
   useEffect(() => {
-    const fetchUserInfo = async () => {
-      const name = localStorage.getItem("name");
-      const grade = localStorage.getItem("grade");
-      const classNum = localStorage.getItem("class");
+    const {
+      data: { subscription },
+    } = supabase.auth.onAuthStateChange((_event, session) => {
+      setSession(session);
+      if (!session) router.push("/");
+    });
 
-      if (name && grade && classNum) {
-        try {
-          const { data, error } = await supabase
-            .from("users")
-            .select("id")
-            .eq("name", name)
-            .eq("grade", grade)
-            .eq("class", classNum)
-            .single();
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      setSession(session);
+      if (!session) router.push("/");
+    });
 
-          if (error) throw error;
-
-          if (data) {
-            setUserInfo({ id: data.id, name, grade, class: classNum });
-          } else {
-            router.push("/");
-          }
-        } catch (error) {
-          console.error("Error fetching user info:", error);
-          router.push("/");
-        }
-      } else {
-        router.push("/");
-      }
-    };
-
-    fetchUserInfo();
+    return () => subscription.unsubscribe();
   }, [router]);
 
-  if (!userInfo) {
+  if (!session) {
     return <div>Loading...</div>;
   }
 
   return (
     <div className="container mx-auto p-4">
       <h1 className="text-2xl font-bold mb-4">채팅</h1>
-      <ChatInterface userInfo={userInfo} />
+      <ChatInterface userId={session.user.id} />
     </div>
   );
 }

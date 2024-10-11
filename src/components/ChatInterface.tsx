@@ -3,6 +3,8 @@
 import React, { useState, useRef, useEffect, useCallback } from "react";
 import axios from "axios";
 import { motion } from "framer-motion";
+import { supabase } from "@/lib/supabase";
+import { UserWithProfile } from "@/types/UserWithProfile";
 
 interface Message {
   id: number;
@@ -12,15 +14,11 @@ interface Message {
 }
 
 interface ChatInterfaceProps {
-  userInfo: {
-    id: string;
-    name: string;
-    grade: string;
-    class: string;
-  };
+  userId: string;
 }
 
-export default function ChatInterface({ userInfo }: ChatInterfaceProps) {
+export default function ChatInterface({ userId }: ChatInterfaceProps) {
+  const [userInfo, setUserInfo] = useState<UserWithProfile | null>(null);
   const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState("");
   const [isRecording, setIsRecording] = useState(false);
@@ -37,8 +35,27 @@ export default function ChatInterface({ userInfo }: ChatInterfaceProps) {
   const observerRef = useRef<IntersectionObserver | null>(null);
   const loadingRef = useRef<HTMLDivElement>(null);
 
+  useEffect(() => {
+    async function fetchUserInfo() {
+      try {
+        const { data, error } = await supabase
+          .from("users")
+          .select("*")
+          .eq("id", userId)
+          .single();
+
+        if (error) throw error;
+        setUserInfo(data as UserWithProfile);
+      } catch (error) {
+        console.error("Error fetching user info:", error);
+      }
+    }
+
+    fetchUserInfo();
+  }, [userId]);
+
   const loadMessages = useCallback(async () => {
-    if (isLoading || !hasMore || !userInfo.id) return;
+    if (isLoading || !hasMore || !userInfo?.id) return;
     setIsLoading(true);
     try {
       const response = await axios.get(`/api/messages`, {
@@ -49,7 +66,7 @@ export default function ChatInterface({ userInfo }: ChatInterfaceProps) {
         },
       });
       const newMessages = response.data.messages;
-      setMessages((prevMessages) => [...newMessages, ...prevMessages]);
+      setMessages((prevMessages) => [...prevMessages, ...newMessages]);
       setHasMore(response.data.hasMore);
       setPage((prevPage) => prevPage + 1);
     } catch (error) {
@@ -57,13 +74,13 @@ export default function ChatInterface({ userInfo }: ChatInterfaceProps) {
     } finally {
       setIsLoading(false);
     }
-  }, [page, isLoading, hasMore, userInfo.id]);
+  }, [page, isLoading, hasMore, userInfo?.id]);
 
   useEffect(() => {
-    if (userInfo.id) {
+    if (userInfo?.id) {
       loadMessages();
     }
-  }, [loadMessages, userInfo.id]);
+  }, [loadMessages, userInfo?.id]);
 
   useEffect(() => {
     observerRef.current = new IntersectionObserver(
@@ -99,10 +116,10 @@ export default function ChatInterface({ userInfo }: ChatInterfaceProps) {
     try {
       const response = await axios.post("/api/chat", {
         message: content,
-        userId: userInfo.id, // 사용자 ID 추가
-        grade: userInfo.grade,
-        classNumber: userInfo.class,
-        name: userInfo.name,
+        userId: userInfo?.id, // 사용자 ID 추가
+        grade: userInfo?.profile?.grade,
+        classNumber: userInfo?.profile?.class,
+        name: userInfo?.profile?.name,
       });
 
       setMessages((prev) => [
