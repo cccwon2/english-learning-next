@@ -21,9 +21,9 @@ export async function GET(req: Request) {
   try {
     const { data, error, count } = await supabase
       .from("conversations")
-      .select("*, translation:conversation_translations(*)", { count: "exact" })
-      .eq("user_id", userId)
-      .order("created_at", { ascending: false })
+      .select("*, translation(*)", { count: "exact" })
+      .eq("userId", userId)
+      .order("createdAt", { ascending: false })
       .range(offset, offset + limit - 1);
 
     if (error) throw error;
@@ -31,8 +31,8 @@ export async function GET(req: Request) {
     const messages = data?.map((item) => ({
       id: item.id,
       content: item.message,
-      isUser: item.is_user_message,
-      translation: item.translation?.translated_response,
+      isUser: item.isUserMessage,
+      translation: item.translation?.translatedResponse,
     }));
 
     const hasMore = count ? offset + limit < count : false;

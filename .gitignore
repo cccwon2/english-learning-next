@@ -36,9 +36,6 @@ next-env.d.ts
 # VSCode
 /.vscode/
 
-# 문서
-/docs/
-
 # 운영체제 관련
 Thumbs.db
 

@@ -1,23 +1,13 @@
-import { User } from "./User";
+import {
+  User,
+  ConversationTranslation as PrismaConversationTranslation,
+  Conversation as PrismaConversation,
+} from "@prisma/client";
 
-export interface Conversation {
-  id: number;
-  user_id: number;
-  message: string;
-  is_user_message: boolean;
-  created_at: string;
-}
+export type Conversation = PrismaConversation;
+export type ConversationTranslation = PrismaConversationTranslation;
 
-export interface ConversationTranslation {
-  id: number;
-  conversation_id: number;
-  translated_message?: string;
-  response?: string;
-  translated_response?: string;
-  language?: string;
-}
-
-export interface ConversationWithUser extends Conversation {
-  users: User;
+export type ConversationWithUser = Conversation & {
+  user: User;
   translation?: ConversationTranslation;
-}
+};

@@ -60,14 +60,14 @@ export default function HistoryPage() {
         {history?.map((item: ConversationWithUser) => (
           <li key={item.id} className="border p-4 rounded-lg">
             <p className="font-bold">
-              {item.is_user_message ? "질문" : "답변"}: {item.message}
+              {item.isUserMessage ? "질문" : "답변"}: {item.message}
             </p>
-            {!item.is_user_message && item.translation?.translated_response && (
-              <p>번역: {item.translation.translated_response}</p>
+            {!item.isUserMessage && item.translation?.translatedResponse && (
+              <p>번역: {item.translation.translatedResponse}</p>
             )}
             <p className="text-sm text-gray-500">
-              {item.users.name} ({item.users.grade}학년 {item.users.class}반) -{" "}
-              {new Date(item.created_at).toLocaleString()}
+              {item.user.name} ({item.user.grade}학년 {item.user.class}반) -{" "}
+              {new Date(item.createdAt).toLocaleString()}
             </p>
             {item.translation?.language && (
               <p className="text-xs text-gray-400">
@@ -91,21 +91,22 @@ async function fetchChatHistory(
     .select(
       `
       *,
-      users (
+      user (
         id,
         name,
         grade,
         class
       ),
-      translation:conversation_translations (
-        translated_message,
+      translation (
+        translatedMessage,
         response,
-        translated_response
+        translatedResponse,
+        language
       )
     `
     )
-    .eq("user_id", userId)
-    .order("created_at", { ascending: false });
+    .eq("userId", userId)
+    .order("createdAt", { ascending: false });
 
   if (error) throw error;
   return data as ConversationWithUser[];

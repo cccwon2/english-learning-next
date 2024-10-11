@@ -1,0 +1,45 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id            Int            @id @default(autoincrement())
+  name          String
+  grade         Int
+  class         Int
+  nameSuffix    NameSuffix     @default(A)
+  createdAt     DateTime       @default(now()) @map("created_at")
+  conversations Conversation[]
+
+  @@unique([grade, class, name, nameSuffix])
+}
+
+model Conversation {
+  id            Int                      @id @default(autoincrement())
+  userId        Int                      @map("user_id")
+  message       String
+  isUserMessage Boolean                  @map("is_user_message")
+  createdAt     DateTime                 @default(now()) @map("created_at")
+  user          User                     @relation(fields: [userId], references: [id])
+  translation   ConversationTranslation?
+}
+
+model ConversationTranslation {
+  id                 Int          @id @default(autoincrement())
+  conversationId     Int          @unique @map("conversation_id")
+  translatedMessage  String?      @map("translated_message")
+  response           String?
+  translatedResponse String?      @map("translated_response")
+  language           String?
+  conversation       Conversation @relation(fields: [conversationId], references: [id])
+}
+
+enum NameSuffix {
+  A
+  B
+}
