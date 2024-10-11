@@ -22,8 +22,8 @@ export async function GET(req: Request) {
     const { data, error, count } = await supabase
       .from("conversations")
       .select("*, translation(*)", { count: "exact" })
-      .eq("userId", userId)
-      .order("createdAt", { ascending: false })
+      .eq("user_id", userId)
+      .order("created_at", { ascending: false })
       .range(offset, offset + limit - 1);
 
     if (error) throw error;

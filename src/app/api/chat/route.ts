@@ -154,18 +154,18 @@ async function saveConversation(
       .from("conversations")
       .insert([
         {
-          userId,
+          user_id: userId,
           message,
-          isUserMessage: true,
+          is_user_message: true,
           id: Date.now(),
-          createdAt: new Date(),
+          created_at: new Date(),
         } as Conversation,
         {
-          userId,
+          user_id: userId,
           message: englishResponse,
-          isUserMessage: false,
+          is_user_message: false,
           id: Date.now(),
-          createdAt: new Date(),
+          created_at: new Date(),
         } as Conversation,
       ])
       .select();
@@ -176,14 +176,14 @@ async function saveConversation(
       .from("conversation_translations")
       .insert([
         {
-          conversationId: conversationData[0].id,
-          translatedMessage: englishMessage,
+          conversation_id: conversationData[0].id,
+          translated_message: englishMessage,
           response: englishResponse,
-          translatedResponse: koreanTranslation,
+          translated_response: koreanTranslation,
         } as ConversationTranslation,
         {
-          conversationId: conversationData[1].id,
-          translatedMessage: koreanTranslation,
+          conversation_id: conversationData[1].id,
+          translated_message: koreanTranslation,
         } as ConversationTranslation,
       ]);
 

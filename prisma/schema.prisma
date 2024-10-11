@@ -12,37 +12,40 @@ datasource db {
 
 model Profile {
   id            String         @id @default(uuid())
-  userId        String         @unique
+  user_id       String         @unique
   name          String?
   grade         Int?
   class         Int?
-  createdAt     DateTime       @default(now())
-  updatedAt     DateTime       @updatedAt
+  created_at    DateTime       @default(now())
+  updated_at    DateTime       @updatedAt
   conversations Conversation[]
 
+  @@map("profiles")
   @@schema("public")
 }
 
 model Conversation {
-  id            Int                      @id @default(autoincrement())
-  message       String
-  createdAt     DateTime                 @default(now())
-  isUserMessage Boolean
-  userId        String
-  profile       Profile                  @relation(fields: [userId], references: [userId])
-  translation   ConversationTranslation?
+  id              Int                      @id @default(autoincrement())
+  message         String
+  created_at      DateTime                 @default(now())
+  is_user_message Boolean
+  user_id         String
+  translation     ConversationTranslation?
+  profile         Profile                  @relation(fields: [user_id], references: [user_id])
 
+  @@map("conversations")
   @@schema("public")
 }
 
 model ConversationTranslation {
-  id                 Int          @id @default(autoincrement())
-  response           String?
-  language           String?
-  conversationId     Int          @unique
-  translatedMessage  String?
-  translatedResponse String?
-  conversation       Conversation @relation(fields: [conversationId], references: [id])
+  id                  Int          @id @default(autoincrement())
+  response            String?
+  language            String?
+  conversation_id     Int          @unique
+  translated_message  String?
+  translated_response String?
+  conversation        Conversation @relation(fields: [conversation_id], references: [id])
 
+  @@map("conversation_translations")
   @@schema("public")
 }

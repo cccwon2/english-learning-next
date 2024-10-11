@@ -65,14 +65,14 @@ export default function ChatInterface({ userId }: ChatInterfaceProps) {
   }, [userId]);
 
   const loadMessages = useCallback(async () => {
-    if (isLoading || !hasMore || !profileInfo?.userId) return;
+    if (isLoading || !hasMore || !profileInfo?.user_id) return;
     setIsLoading(true);
     try {
       const response = await axios.get(`/api/messages`, {
         params: {
           page,
           limit: 20,
-          userId: profileInfo.userId,
+          userId: profileInfo.user_id,
         },
       });
       const newMessages = response.data.messages;
@@ -84,13 +84,13 @@ export default function ChatInterface({ userId }: ChatInterfaceProps) {
     } finally {
       setIsLoading(false);
     }
-  }, [page, isLoading, hasMore, profileInfo?.userId]);
+  }, [page, isLoading, hasMore, profileInfo?.user_id]);
 
   useEffect(() => {
-    if (profileInfo?.userId) {
+    if (profileInfo?.user_id) {
       loadMessages();
     }
-  }, [loadMessages, profileInfo?.userId]);
+  }, [loadMessages, profileInfo?.user_id]);
 
   useEffect(() => {
     observerRef.current = new IntersectionObserver(
@@ -126,7 +126,7 @@ export default function ChatInterface({ userId }: ChatInterfaceProps) {
     try {
       const response = await axios.post("/api/chat", {
         message: content,
-        userId: profileInfo?.userId, // 사용자 ID 추가
+        userId: profileInfo?.user_id, // 사용자 ID 추가
         grade: profileInfo?.grade,
         classNumber: profileInfo?.class,
         name: profileInfo?.name,

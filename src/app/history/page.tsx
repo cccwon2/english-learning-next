@@ -29,9 +29,9 @@ export default function HistoryPage() {
           class
         ),
         translation:conversation_translations (
-          translatedMessage,
+          translated_message,
           response,
-          translatedResponse,
+          translated_response,
           language
         )
       `
@@ -57,14 +57,16 @@ export default function HistoryPage() {
           {conversation.translation && (
             <div className="mt-2">
               <p>
-                번역된 메시지: {conversation.translation?.translatedMessage}
+                번역된 메시지: {conversation.translation?.translated_message}
               </p>
-              <p>번역된 응답: {conversation.translation?.translatedResponse}</p>
+              <p>
+                번역된 응답: {conversation.translation?.translated_response}
+              </p>
               <p>언어: {conversation.translation?.language}</p>
             </div>
           )}
           <p className="text-sm text-gray-500">
-            작성 시간: {new Date(conversation.createdAt).toLocaleString()}
+            작성 시간: {new Date(conversation.created_at).toLocaleString()}
           </p>
         </div>
       ))}
