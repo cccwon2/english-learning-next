@@ -2,12 +2,12 @@ import {
   ConversationTranslation as PrismaConversationTranslation,
   Conversation as PrismaConversation,
 } from "@prisma/client";
-import { UserWithProfile } from "./User";
+import { Profile } from "./Profile";
 
 export type Conversation = PrismaConversation;
 export type ConversationTranslation = PrismaConversationTranslation;
 
-export type ConversationWithUser = Conversation & {
-  user: UserWithProfile;
+export type ConversationWithProfile = Conversation & {
+  profile: Profile;
   translation?: ConversationTranslation;
 };

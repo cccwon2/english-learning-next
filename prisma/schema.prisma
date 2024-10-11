@@ -10,26 +10,15 @@ datasource db {
   schemas   = ["auth", "public"]
 }
 
-model User {
+model Profile {
   id            String         @id @default(uuid())
-  email         String         @unique
+  userId        String         @unique
+  name          String?
+  grade         Int?
+  class         Int?
   createdAt     DateTime       @default(now())
   updatedAt     DateTime       @updatedAt
   conversations Conversation[]
-  profile       Profile?       @relation("UserProfile")
-
-  @@schema("auth")
-}
-
-model Profile {
-  id        String   @id @default(uuid())
-  userId    String   @unique
-  name      String?
-  grade     Int?
-  class     Int?
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-  user      User     @relation("UserProfile", fields: [userId], references: [id])
 
   @@schema("public")
 }
@@ -40,7 +29,7 @@ model Conversation {
   createdAt     DateTime                 @default(now())
   isUserMessage Boolean
   userId        String
-  user          User                     @relation(fields: [userId], references: [id])
+  profile       Profile                  @relation(fields: [userId], references: [userId])
   translation   ConversationTranslation?
 
   @@schema("public")

@@ -32,21 +32,29 @@ export default function Auth() {
           throw new Error("비밀번호가 일치하지 않습니다.");
         }
 
-        const { data, error } = await supabase.auth.signUp({
+        const { error: signUpError } = await supabase.auth.signUp({
           email,
           password,
         });
 
-        if (error) throw error;
+        if (signUpError) throw signUpError;
 
-        if (data.user) {
+        // 회원가입 후 사용자 정보 가져오기
+        const {
+          data: { user },
+          error: getUserError,
+        } = await supabase.auth.getUser();
+
+        if (getUserError) throw getUserError;
+
+        if (user) {
           const { error: profileError } = await supabase
             .from("profiles")
             .insert({
-              user_id: data.user.id,
+              user_id: user.id,
               name,
-              grade,
-              class: classNum,
+              grade: parseInt(grade),
+              class: parseInt(classNum),
             });
 
           if (profileError) throw profileError;
@@ -54,6 +62,7 @@ export default function Auth() {
 
         alert("회원가입에 성공했습니다.");
       } else {
+        // 로그인 로직은 그대로 유지
         const { error } = await supabase.auth.signInWithPassword({
           email,
           password,
@@ -71,7 +80,6 @@ export default function Auth() {
       setLoading(false);
     }
   };
-
   return (
     <div className="flex justify-center items-center min-h-screen bg-gray-100">
       <Card className="w-full max-w-md">
