@@ -16,6 +16,10 @@ export default function Auth() {
   const [loading, setLoading] = useState(false);
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
+  const [name, setName] = useState("");
+  const [grade, setGrade] = useState("");
+  const [classNum, setClassNum] = useState("");
   const [isSignUp, setIsSignUp] = useState(false);
 
   const handleAuth = async (e: React.FormEvent<HTMLFormElement>) => {
@@ -24,22 +28,38 @@ export default function Auth() {
 
     try {
       if (isSignUp) {
-        const { error } = await supabase.auth.signUp({
+        if (password !== confirmPassword) {
+          throw new Error("비밀번호가 일치하지 않습니다.");
+        }
+
+        const { data, error } = await supabase.auth.signUp({
           email,
           password,
-          options: {
-            emailRedirectTo: "https://korean-english-tutor.vercel.app",
-          },
         });
+
         if (error) throw error;
-        alert("회원가입 성공! 이메일을 확인해주세요.");
+
+        if (data.user) {
+          const { error: profileError } = await supabase
+            .from("profiles")
+            .insert({
+              user_id: data.user.id,
+              name,
+              grade,
+              class: classNum,
+            });
+
+          if (profileError) throw profileError;
+        }
+
+        alert("회원가입에 성공했습니다.");
       } else {
         const { error } = await supabase.auth.signInWithPassword({
           email,
           password,
         });
         if (error) throw error;
-        alert("로그인 성공!");
+        alert("로그인에 성공했습니다.");
       }
     } catch (error) {
       if (error instanceof Error) {
@@ -77,6 +97,38 @@ export default function Auth() {
                 onChange={(e) => setPassword(e.target.value)}
                 required
               />
+              {isSignUp && (
+                <>
+                  <Input
+                    type="password"
+                    placeholder="비밀번호 확인"
+                    value={confirmPassword}
+                    onChange={(e) => setConfirmPassword(e.target.value)}
+                    required
+                  />
+                  <Input
+                    type="text"
+                    placeholder="이름"
+                    value={name}
+                    onChange={(e) => setName(e.target.value)}
+                    required
+                  />
+                  <Input
+                    type="number"
+                    placeholder="학년"
+                    value={grade}
+                    onChange={(e) => setGrade(e.target.value)}
+                    required
+                  />
+                  <Input
+                    type="number"
+                    placeholder="반"
+                    value={classNum}
+                    onChange={(e) => setClassNum(e.target.value)}
+                    required
+                  />
+                </>
+              )}
               <Button type="submit" className="w-full" disabled={loading}>
                 {loading ? "처리 중..." : isSignUp ? "회원가입" : "로그인"}
               </Button>
