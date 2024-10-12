@@ -46,8 +46,12 @@ export default function Auth() {
         });
 
         if (!response.ok) {
-          const error = await response.json();
-          throw new Error(error.message);
+          const errorData = await response.json();
+          throw new Error(
+            errorData.error ||
+              errorData.message ||
+              "알 수 없는 오류가 발생했습니다."
+          );
         }
 
         alert("회원가입에 성공했습니다.");
