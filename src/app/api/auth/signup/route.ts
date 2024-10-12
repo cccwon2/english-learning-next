@@ -32,11 +32,6 @@ export async function POST(request: Request) {
         email,
         password,
         options: {
-          data: {
-            name,
-            grade,
-            class: classNum,
-          },
           emailRedirectTo: `${process.env.NEXT_PUBLIC_SITE_URL}/auth/callback`,
         },
       });
@@ -68,8 +63,7 @@ export async function POST(request: Request) {
         // Profile 생성
         const profile = await prisma.profile.create({
           data: {
-            id: data.user.id, // User의 id를 Profile의 id로 사용
-            user_id: data.user.id,
+            user_id: parseInt(data.user.id),
             name,
             grade,
             class: classNum,
