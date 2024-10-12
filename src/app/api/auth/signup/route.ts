@@ -8,12 +8,11 @@ const prisma = new PrismaClient();
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
 const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!;
 
-const supabase = createClient(supabaseUrl, supabaseKey, {
-  auth: {
-    autoRefreshToken: false,
-    persistSession: false,
-  },
-});
+if (!supabaseUrl || !supabaseKey) {
+  throw new Error("Missing Supabase environment variables");
+}
+
+const supabase = createClient(supabaseUrl, supabaseKey);
 
 export async function POST(request: Request) {
   try {
@@ -33,12 +32,18 @@ export async function POST(request: Request) {
         email,
         password,
         options: {
+          data: {
+            name,
+            grade,
+            class: classNum,
+          },
           emailRedirectTo: `${process.env.NEXT_PUBLIC_SITE_URL}/auth/callback`,
         },
       });
 
       if (error) {
         console.error("Supabase 회원가입 오류:", error);
+        console.error("Error details:", JSON.stringify(error, null, 2));
         return NextResponse.json(
           {
             message: "회원가입 중 오류가 발생했습니다.",
@@ -60,21 +65,23 @@ export async function POST(request: Request) {
       console.log("Supabase user created:", data.user.id);
 
       try {
-        // Profile 정보 저장 부분을 User 정보 업데이트로 변경
-        const updatedUser = await prisma.user.update({
-          where: { id: data.user.id },
+        // Profile 생성
+        const profile = await prisma.profile.create({
           data: {
+            id: data.user.id, // User의 id를 Profile의 id로 사용
+            user_id: data.user.id,
             name,
             grade,
             class: classNum,
           },
         });
-        console.log("User updated:", updatedUser);
+        console.log("Profile created:", profile);
       } catch (dbError) {
-        console.error("데이터베이스 오류:", dbError);
+        console.error("Profile 생성 오류:", dbError);
+        // 프로필 생성에 실패한 경우 Supabase 사용자 삭제
         await supabase.auth.admin.deleteUser(data.user.id);
         return NextResponse.json(
-          { message: "사용자 정보 저장 중 오류가 발생했습니다." },
+          { message: "프로필 생성 중 오류가 발생했습니다." },
           { status: 500 }
         );
       }
@@ -85,11 +92,13 @@ export async function POST(request: Request) {
       );
     } catch (error: any) {
       console.error("Supabase 회원가입 상세 오류:", error);
+      console.error("Error stack:", error.stack);
       return NextResponse.json(
         {
           message: "회원가입 중 오류가 발생했습니다.",
           error: error.message || "알 수 없는 오류",
           details: JSON.stringify(error),
+          stack: error.stack,
         },
         { status: error.status || 500 }
       );

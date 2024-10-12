@@ -1,13 +1,9 @@
-import { NextResponse } from "next/server";
-import { createClient } from "@supabase/supabase-js";
 import axios from "axios";
-import { Conversation, ConversationTranslation } from "@prisma/client";
+import { NextResponse } from "next/server";
+import { PrismaClient } from "@prisma/client";
 import OpenAI from "openai";
 
-const supabase = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-);
+const prisma = new PrismaClient();
 
 const openai = new OpenAI({
   apiKey: process.env.OPENAI_API_KEY,
@@ -48,6 +44,8 @@ export async function POST(req: Request) {
       { error: "An error occurred while processing your request" },
       { status: 500 }
     );
+  } finally {
+    await prisma.$disconnect();
   }
 }
 
@@ -150,44 +148,50 @@ async function saveConversation(
   koreanTranslation: string
 ) {
   try {
-    const { data: conversationData, error: conversationError } = await supabase
-      .from("conversations")
-      .insert([
-        {
-          user_id: userId,
-          message,
-          is_user_message: true,
-          id: Date.now(),
-          created_at: new Date(),
-        } as Conversation,
-        {
-          user_id: userId,
-          message: englishResponse,
-          is_user_message: false,
-          id: Date.now(),
-          created_at: new Date(),
-        } as Conversation,
-      ])
-      .select();
+    // 사용자의 profile 조회
+    const profile = await prisma.profile.findUnique({
+      where: { user_id: userId },
+    });
 
-    if (conversationError) throw conversationError;
+    if (!profile) {
+      throw new Error("Profile not found");
+    }
 
-    const { error: translationError } = await supabase
-      .from("conversation_translations")
-      .insert([
-        {
-          conversation_id: conversationData[0].id,
-          translated_message: englishMessage,
-          response: englishResponse,
-          translated_response: koreanTranslation,
-        } as ConversationTranslation,
-        {
-          conversation_id: conversationData[1].id,
-          translated_message: koreanTranslation,
-        } as ConversationTranslation,
-      ]);
+    // 사용자 메시지 저장
+    const userConversation = await prisma.conversation.create({
+      data: {
+        profile_id: profile.id,
+        message,
+        is_user_message: true,
+      },
+    });
 
-    if (translationError) throw translationError;
+    // AI 응답 저장
+    const aiConversation = await prisma.conversation.create({
+      data: {
+        profile_id: profile.id,
+        message: englishResponse,
+        is_user_message: false,
+      },
+    });
+
+    // 사용자 메시지 번역 저장
+    await prisma.conversationTranslation.create({
+      data: {
+        conversation_id: userConversation.id,
+        translated_message: englishMessage,
+        response: englishResponse,
+        translated_response: koreanTranslation,
+      },
+    });
+
+    // AI 응답 번역 저장
+    await prisma.conversationTranslation.create({
+      data: {
+        conversation_id: aiConversation.id,
+        translated_message: koreanTranslation,
+      },
+    });
   } catch (error) {
     console.error("Error in saveConversation:", error);
     throw new Error("Failed to save conversation");
