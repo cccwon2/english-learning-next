@@ -150,7 +150,7 @@ async function saveConversation(
   try {
     // 사용자의 profile 조회
     const profile = await prisma.profile.findUnique({
-      where: { user_id: parseInt(userId) },
+      where: { user_id: userId }, // userId는 이미 UUID 문자열입니다
     });
 
     if (!profile) {

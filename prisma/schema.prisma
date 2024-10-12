@@ -11,7 +11,7 @@ datasource db {
 }
 
 model User {
-  id                 Int       @id @default(autoincrement())
+  id                 String    @id @db.Uuid
   email              String?   @unique @db.VarChar(255)
   profile            Profile?
   
@@ -20,8 +20,8 @@ model User {
 }
 
 model Profile {
-  id         Int      @id @default(autoincrement())
-  user_id    Int      @unique
+  id         String   @id @default(uuid()) @db.Uuid
+  user_id    String   @unique @db.Uuid
   name       String?
   grade      Int?     @db.SmallInt
   class      Int?     @db.SmallInt
@@ -40,7 +40,7 @@ model Conversation {
   created_at      DateTime  @default(now()) @db.Timestamptz(6)
   updated_at      DateTime  @updatedAt @db.Timestamptz(6)
   is_user_message Boolean
-  profile_id      Int       @unique
+  profile_id      String    @db.Uuid
   translation     ConversationTranslation?
   profile         Profile   @relation(fields: [profile_id], references: [id])
 

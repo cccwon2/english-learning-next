@@ -63,7 +63,7 @@ export async function POST(request: Request) {
         // Profile 생성
         const profile = await prisma.profile.create({
           data: {
-            user_id: parseInt(data.user.id),
+            user_id: data.user.id, // 이미 UUID 문자열입니다
             name,
             grade,
             class: classNum,
