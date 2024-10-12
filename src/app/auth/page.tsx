@@ -1,7 +1,6 @@
 "use client";
 
 import { useState } from "react";
-import { supabase } from "@/lib/supabase";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
@@ -32,42 +31,40 @@ export default function Auth() {
           throw new Error("비밀번호가 일치하지 않습니다.");
         }
 
-        const { error: signUpError } = await supabase.auth.signUp({
-          email,
-          password,
+        const response = await fetch("/api/auth/signup", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            email,
+            password,
+            name,
+            grade: parseInt(grade),
+            class: parseInt(classNum),
+          }),
         });
 
-        if (signUpError) throw signUpError;
-
-        // 회원가입 후 사용자 정보 가져오기
-        const {
-          data: { user },
-          error: getUserError,
-        } = await supabase.auth.getUser();
-
-        if (getUserError) throw getUserError;
-
-        if (user) {
-          const { error: profileError } = await supabase
-            .from("profiles")
-            .insert({
-              user_id: user.id,
-              name,
-              grade: parseInt(grade),
-              class: parseInt(classNum),
-            });
-
-          if (profileError) throw profileError;
+        if (!response.ok) {
+          const error = await response.json();
+          throw new Error(error.message);
         }
 
         alert("회원가입에 성공했습니다.");
       } else {
-        // 로그인 로직은 그대로 유지
-        const { error } = await supabase.auth.signInWithPassword({
-          email,
-          password,
+        const response = await fetch("/api/auth/signin", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({ email, password }),
         });
-        if (error) throw error;
+
+        if (!response.ok) {
+          const error = await response.json();
+          throw new Error(error.message);
+        }
+
         alert("로그인에 성공했습니다.");
       }
     } catch (error) {
@@ -80,6 +77,7 @@ export default function Auth() {
       setLoading(false);
     }
   };
+
   return (
     <div className="flex justify-center items-center min-h-screen bg-gray-100">
       <Card className="w-full max-w-md">

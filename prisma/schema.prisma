@@ -10,29 +10,41 @@ datasource db {
   schemas   = ["auth", "public"]
 }
 
-model Profile {
-  id            String         @id @default(uuid())
-  user_id       String         @unique
-  name          String?
-  grade         Int?
-  class         Int?
-  created_at    DateTime       @default(now())
-  updated_at    DateTime       @updatedAt
+model User {
+  id            String         @id @db.Uuid
+  email         String         @unique
+  phone         String?        @unique
+  created_at    DateTime       @default(now()) @db.Timestamptz(6)
+  updated_at    DateTime       @updatedAt @db.Timestamptz(6)
+  profile       Profile?
   conversations Conversation[]
 
-  @@map("profiles")
+  @@schema("auth")
+  @@map("users")
+}
+
+model Profile {
+  id      String @id @default(uuid())
+  user_id String @unique @db.Uuid
+  name    String
+  grade   Int    @db.SmallInt
+  class   Int    @db.SmallInt
+  user    User   @relation(fields: [user_id], references: [id])
+
   @@schema("public")
 }
 
 model Conversation {
   id              Int                      @id @default(autoincrement())
   message         String
-  created_at      DateTime                 @default(now())
+  created_at      DateTime                 @default(now()) @db.Timestamptz(6)
+  updated_at      DateTime                 @updatedAt @db.Timestamptz(6)
   is_user_message Boolean
-  user_id         String
+  user_id         String                   @db.Uuid
   translation     ConversationTranslation?
-  profile         Profile                  @relation(fields: [user_id], references: [user_id])
+  user            User                     @relation(fields: [user_id], references: [id])
 
+  @@index([user_id])
   @@map("conversations")
   @@schema("public")
 }
@@ -44,6 +56,8 @@ model ConversationTranslation {
   conversation_id     Int          @unique
   translated_message  String?
   translated_response String?
+  created_at          DateTime     @default(now()) @db.Timestamptz(6)
+  updated_at          DateTime     @updatedAt @db.Timestamptz(6)
   conversation        Conversation @relation(fields: [conversation_id], references: [id])
 
   @@map("conversation_translations")
