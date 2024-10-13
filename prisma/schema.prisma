@@ -1,37 +1,14 @@
-generator client {
-  provider        = "prisma-client-js"
-  previewFeatures = ["multiSchema"]
-}
-
+// Data source
 datasource db {
   provider  = "postgresql"
   url       = env("DATABASE_URL")
-  directUrl = env("DIRECT_URL")
-  schemas   = ["auth", "public"]
+  schemas   = ["public"]
 }
 
-model User {
-  id                 String    @id @db.Uuid
-  email              String?   @unique @db.VarChar(255)
-  profile            Profile?
-  
-  @@schema("auth")
-  @@map("users")
-}
-
-model Profile {
-  id         String   @id @default(uuid()) @db.Uuid
-  user_id    String   @unique @db.Uuid
-  name       String?
-  grade      Int?     @db.SmallInt
-  class      Int?     @db.SmallInt
-  created_at DateTime @default(now()) @db.Timestamptz(6)
-  updated_at DateTime @updatedAt @db.Timestamptz(6)
-  user       User     @relation(fields: [user_id], references: [id])
-  conversations Conversation[]
-
-  @@schema("public")
-  @@map("profiles")
+// Generator
+generator client {
+  provider        = "prisma-client-js"
+  previewFeatures = ["multiSchema"]
 }
 
 model Conversation {
@@ -40,11 +17,10 @@ model Conversation {
   created_at      DateTime  @default(now()) @db.Timestamptz(6)
   updated_at      DateTime  @updatedAt @db.Timestamptz(6)
   is_user_message Boolean
-  profile_id      String    @db.Uuid
+  user_id         String    @db.Uuid
   translation     ConversationTranslation?
-  profile         Profile   @relation(fields: [profile_id], references: [id])
 
-  @@index([profile_id])
+  @@index([user_id])
   @@schema("public")
   @@map("conversations")
 }

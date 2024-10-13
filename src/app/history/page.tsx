@@ -1,13 +1,15 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { supabase } from "@/lib/supabase";
-import { ConversationWithProfile } from "@/types/Conversation";
+import { createClient } from "@/utils/supabase/client";
+import { ConversationWithTranslation } from "@/types/Conversation";
 import { Session } from "@supabase/supabase-js";
+
+const supabase = createClient();
 
 export default function HistoryPage() {
   const [session, setSession] = useState<Session | null>(null);
-  const [history, setHistory] = useState<ConversationWithProfile[]>([]);
+  const [history, setHistory] = useState<ConversationWithTranslation[]>([]);
 
   useEffect(() => {
     supabase.auth.getSession().then(({ data: { session } }) => {
@@ -40,7 +42,7 @@ export default function HistoryPage() {
       .order("createdAt", { ascending: false });
 
     if (error) console.error("Error fetching chat history:", error);
-    else setHistory(data as ConversationWithProfile[]);
+    else setHistory(data as ConversationWithTranslation[]);
   }
 
   if (!session) return <div>로그인 후 히스토리를 볼 수 있습니다.</div>;
@@ -50,7 +52,7 @@ export default function HistoryPage() {
       {history.map((conversation) => (
         <div key={conversation.id} className="mb-4 p-4 border rounded">
           <p className="font-bold">
-            사용자: {conversation.profile?.name || "알 수 없음"}
+            사용자 ID: {conversation.user_id || "알 수 없음"}
           </p>
           <p>메시지: {conversation.message}</p>
           <p>응답: {conversation.translation?.response}</p>

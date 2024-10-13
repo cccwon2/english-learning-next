@@ -1,6 +1,9 @@
 import axios from "axios";
 import { NextResponse } from "next/server";
 import { PrismaClient } from "@prisma/client";
+import { createClient } from "@/utils/supabase/server";
+import { SupabaseClient } from "@supabase/supabase-js";
+import { Database } from "@/types/supabase";
 import OpenAI from "openai";
 
 const prisma = new PrismaClient();
@@ -10,6 +13,8 @@ const openai = new OpenAI({
 });
 
 export async function POST(req: Request) {
+  const supabase = createClient() as SupabaseClient<Database>;
+
   try {
     const { message, userId, grade } = await req.json();
 
@@ -25,6 +30,7 @@ export async function POST(req: Request) {
     const koreanTranslation = await translateToKorean(englishResponse);
 
     await saveConversation(
+      supabase,
       userId,
       message,
       englishResponse,
@@ -141,6 +147,7 @@ async function getAIResponse(message: string, grade: string): Promise<string> {
 }
 
 async function saveConversation(
+  supabase: SupabaseClient<Database>,
   userId: string,
   message: string,
   englishResponse: string,
@@ -148,19 +155,24 @@ async function saveConversation(
   koreanTranslation: string
 ) {
   try {
-    // 사용자의 profile 조회
-    const profile = await prisma.profile.findUnique({
-      where: { user_id: userId }, // userId는 이미 UUID 문자열입니다
-    });
+    const { data: user, error } = await supabase
+      .from("auth.users")
+      .select("id")
+      .eq("id", userId)
+      .single();
 
-    if (!profile) {
-      throw new Error("Profile not found");
+    if (error) {
+      throw new Error(error.message);
+    }
+
+    if (!user) {
+      throw new Error("User not found");
     }
 
     // 사용자 메시지 저장
     const userConversation = await prisma.conversation.create({
       data: {
-        profile_id: profile.id,
+        user_id: user.id,
         message,
         is_user_message: true,
       },
@@ -169,7 +181,7 @@ async function saveConversation(
     // AI 응답 저장
     const aiConversation = await prisma.conversation.create({
       data: {
-        profile_id: profile.id,
+        user_id: user.id,
         message: englishResponse,
         is_user_message: false,
       },

@@ -1,16 +1,5 @@
 # 데이터베이스 스키마
 
-## User 테이블
-
-| 컬럼명     | 타입       | 설명                   |
-| ---------- | ---------- | ---------------------- |
-| id         | Int        | 기본 키, 자동 증가     |
-| name       | String     | 사용자 이름            |
-| grade      | Int        | 학년                   |
-| class      | Int        | 반                     |
-| nameSuffix | NameSuffix | 이름 접미사 (A 또는 B) |
-| createdAt  | DateTime   | 생성 시간              |
-
 ## Conversation 테이블
 
 | 컬럼명        | 타입     | 설명                |
@@ -32,42 +21,20 @@
 | translatedResponse | String? | 번역된 AI 응답     |
 | language           | String? | 언어               |
 
-## 기타 테이블 및 관계 설명
-
-### NameSuffix 열거형
-
-`NameSuffix`는 `User` 테이블에서 사용되는 열거형으로, 다음 값들을 가질 수 있습니다:
-
-- A
-- B
-
-이는 동명이인을 구분하기 위해 사용됩니다.
-
 ### 테이블 간 관계
 
-1. User와 Conversation의 관계:
-
-   - 일대다 관계
-   - 한 명의 사용자(User)는 여러 개의 대화(Conversation)를 가질 수 있습니다.
-   - `Conversation` 테이블의 `userId`는 `User` 테이블의 `id`를 참조합니다.
-
-2. Conversation과 ConversationTranslation의 관계:
+1. Conversation과 ConversationTranslation의 관계:
    - 일대일 관계
    - 각 대화(Conversation)는 하나의 번역(ConversationTranslation)을 가집니다.
    - `ConversationTranslation` 테이블의 `conversationId`는 `Conversation` 테이블의 `id`를 참조합니다.
 
 ### 인덱스 및 제약 조건
 
-1. User 테이블:
-
-   - `(grade, class, name, nameSuffix)`에 대해 유니크 제약 조건이 설정되어 있습니다.
-   - 이는 같은 학년, 반에 동일한 이름과 접미사를 가진 사용자가 중복되지 않도록 합니다.
-
-2. Conversation 테이블:
+1. Conversation 테이블:
 
    - `userId`에 대해 인덱스가 생성되어 있어, 특정 사용자의 대화를 빠르게 조회할 수 있습니다.
 
-3. ConversationTranslation 테이블:
+2. ConversationTranslation 테이블:
    - `conversationId`에 대해 유니크 제약 조건이 설정되어 있어, 각 대화는 하나의 번역만을 가질 수 있습니다.
 
 ### 데이터 타입 설명

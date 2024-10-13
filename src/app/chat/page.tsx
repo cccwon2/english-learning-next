@@ -3,8 +3,10 @@
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import ChatInterface from "@/components/ChatInterface";
-import { supabase } from "@/lib/supabase";
+import { createClient } from "@/utils/supabase/client";
 import { Session } from "@supabase/supabase-js";
+
+const supabase = createClient();
 
 export default function ChatPage() {
   const [session, setSession] = useState<Session | null>(null);
@@ -33,7 +35,7 @@ export default function ChatPage() {
   return (
     <div className="container mx-auto p-4">
       <h1 className="text-2xl font-bold mb-4">채팅</h1>
-      <ChatInterface userId={session.user.id} />
+      <ChatInterface user={session.user} />
     </div>
   );
 }

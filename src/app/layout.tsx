@@ -3,8 +3,8 @@ import type { Metadata } from "next";
 import { Providers } from "./providers";
 
 export const metadata: Metadata = {
-  title: "초등학생을 위한 영어 학습 웹 애플리케이션",
-  description: "OpenAI API를 활용한 맞춤형 영어 학습 웹앱",
+  title: "영어 학습 웹 애플리케이션",
+  description: "OpenAI API를 활용한 맞춤형 영어 학습",
 };
 
 export default function RootLayout({

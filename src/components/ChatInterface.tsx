@@ -3,8 +3,7 @@
 import React, { useState, useRef, useEffect, useCallback } from "react";
 import axios from "axios";
 import { motion } from "framer-motion";
-import { supabase } from "@/lib/supabase";
-import { Profile } from "@/types/Profile";
+import { User } from "@supabase/supabase-js";
 
 interface Message {
   id: number;
@@ -14,11 +13,10 @@ interface Message {
 }
 
 interface ChatInterfaceProps {
-  userId: string;
+  user: User;
 }
 
-export default function ChatInterface({ userId }: ChatInterfaceProps) {
-  const [profileInfo, setProfileInfo] = useState<Profile | null>(null);
+export default function ChatInterface({ user }: ChatInterfaceProps) {
   const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState("");
   const [isRecording, setIsRecording] = useState(false);
@@ -35,44 +33,15 @@ export default function ChatInterface({ userId }: ChatInterfaceProps) {
   const observerRef = useRef<IntersectionObserver | null>(null);
   const loadingRef = useRef<HTMLDivElement>(null);
 
-  useEffect(() => {
-    async function fetchUserInfo() {
-      try {
-        const {
-          data: { user },
-          error,
-        } = await supabase.auth.getUser();
-
-        if (error) throw error;
-        if (user) {
-          // 프로필 정보 가져오기
-          const { data: profile, error: profileError } = await supabase
-            .from("profiles")
-            .select("*")
-            .eq("userId", user.id)
-            .single();
-
-          if (profileError) throw profileError;
-
-          setProfileInfo(profile);
-        }
-      } catch (error) {
-        console.error("Error fetching user info:", error);
-      }
-    }
-
-    fetchUserInfo();
-  }, [userId]);
-
   const loadMessages = useCallback(async () => {
-    if (isLoading || !hasMore || !profileInfo?.user_id) return;
+    if (isLoading || !hasMore || !user?.id) return;
     setIsLoading(true);
     try {
       const response = await axios.get(`/api/messages`, {
         params: {
           page,
           limit: 20,
-          userId: profileInfo.user_id,
+          userId: user.id,
         },
       });
       const newMessages = response.data.messages;
@@ -84,13 +53,13 @@ export default function ChatInterface({ userId }: ChatInterfaceProps) {
     } finally {
       setIsLoading(false);
     }
-  }, [page, isLoading, hasMore, profileInfo?.user_id]);
+  }, [page, isLoading, hasMore, user?.id]);
 
   useEffect(() => {
-    if (profileInfo?.user_id) {
+    if (user?.id) {
       loadMessages();
     }
-  }, [loadMessages, profileInfo?.user_id]);
+  }, [loadMessages, user?.id]);
 
   useEffect(() => {
     observerRef.current = new IntersectionObserver(
@@ -126,10 +95,7 @@ export default function ChatInterface({ userId }: ChatInterfaceProps) {
     try {
       const response = await axios.post("/api/chat", {
         message: content,
-        userId: profileInfo?.user_id, // 사용자 ID 추가
-        grade: profileInfo?.grade,
-        classNumber: profileInfo?.class,
-        name: profileInfo?.name,
+        userId: user.id,
       });
 
       setMessages((prev) => [

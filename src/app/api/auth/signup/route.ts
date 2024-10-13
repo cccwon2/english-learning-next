@@ -1,38 +1,18 @@
 import { NextResponse } from "next/server";
-import { createClient } from "@supabase/supabase-js";
-import { PrismaClient } from "@prisma/client";
-
-// Prisma 클라이언트 초기화
-const prisma = new PrismaClient();
-
-const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
-const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!;
-
-if (!supabaseUrl || !supabaseKey) {
-  throw new Error("Missing Supabase environment variables");
-}
-
-const supabase = createClient(supabaseUrl, supabaseKey);
+import { adminAuthClient } from "@/utils/supabase/admin";
 
 export async function POST(request: Request) {
   try {
-    const {
-      email,
-      password,
-      name,
-      grade,
-      class: classNum,
-    } = await request.json();
-
-    console.log("Received signup data:", { email, name, grade, classNum });
+    const { email, password } = await request.json();
 
     // Supabase를 사용한 회원가입
     try {
-      const { data, error } = await supabase.auth.signUp({
+      const { data, error } = await adminAuthClient.createUser({
         email,
         password,
-        options: {
-          emailRedirectTo: `${process.env.NEXT_PUBLIC_SITE_URL}/auth/callback`,
+        email_confirm: true,
+        user_metadata: {
+          role: "user",
         },
       });
 
@@ -49,7 +29,7 @@ export async function POST(request: Request) {
         );
       }
 
-      if (!data.user) {
+      if (!data?.user) {
         console.error("사용자 데이터가 없습니다.");
         return NextResponse.json(
           { message: "사용자 생성에 실패했습니다." },
@@ -57,28 +37,7 @@ export async function POST(request: Request) {
         );
       }
 
-      console.log("Supabase user created:", data.user.id);
-
-      try {
-        // Profile 생성
-        const profile = await prisma.profile.create({
-          data: {
-            user_id: data.user.id, // 이미 UUID 문자열입니다
-            name,
-            grade,
-            class: classNum,
-          },
-        });
-        console.log("Profile created:", profile);
-      } catch (dbError) {
-        console.error("Profile 생성 오류:", dbError);
-        // 프로필 생성에 실패한 경우 Supabase 사용자 삭제
-        await supabase.auth.admin.deleteUser(data.user.id);
-        return NextResponse.json(
-          { message: "프로필 생성 중 오류가 발생했습니다." },
-          { status: 500 }
-        );
-      }
+      console.log("Supabase auth.user id: ", data.user.id);
 
       return NextResponse.json(
         { message: "회원가입이 완료되었습니다. 이메일을 확인해 주세요." },
@@ -103,7 +62,5 @@ export async function POST(request: Request) {
       { message: "회원가입 중 오류가 발생했습니다.", error: String(error) },
       { status: 500 }
     );
-  } finally {
-    await prisma.$disconnect();
   }
 }
