@@ -14,9 +14,21 @@ export function createClient() {
         },
         setAll(cookiesToSet) {
           try {
-            cookiesToSet.forEach(({ name, value, options }) =>
-              cookieStore.set(name, value, options)
-            );
+            cookiesToSet.forEach(({ name, value, options }) => {
+              // production 환경에서 보안 옵션 추가
+              if (
+                process.env.NODE_ENV === "production" &&
+                name.includes("-auth-token")
+              ) {
+                options = {
+                  ...options,
+                  httpOnly: true,
+                  secure: true,
+                  sameSite: "strict" as const,
+                };
+              }
+              cookieStore.set(name, value, options);
+            });
           } catch {
             // The `setAll` method was called from a Server Component.
             // This can be ignored if you have middleware refreshing
