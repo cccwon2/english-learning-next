@@ -1,9 +1,6 @@
 import axios from "axios";
 import { NextResponse } from "next/server";
 import { PrismaClient } from "@prisma/client";
-import { createClient } from "@/utils/supabase/server";
-import { SupabaseClient } from "@supabase/supabase-js";
-import { Database } from "@/types/supabase";
 import OpenAI from "openai";
 
 const prisma = new PrismaClient();
@@ -13,12 +10,10 @@ const openai = new OpenAI({
 });
 
 export async function POST(req: Request) {
-  const supabase = createClient() as SupabaseClient<Database>;
-
   try {
-    const { message, userId, grade } = await req.json();
+    const { message, userId, grade = "6" } = await req.json();
 
-    if (!message || !userId || !grade) {
+    if (!message || !userId) {
       return NextResponse.json(
         { error: "Missing required fields" },
         { status: 400 }
@@ -30,7 +25,6 @@ export async function POST(req: Request) {
     const koreanTranslation = await translateToKorean(englishResponse);
 
     await saveConversation(
-      supabase,
       userId,
       message,
       englishResponse,
@@ -133,7 +127,7 @@ async function getAIResponse(message: string, grade: string): Promise<string> {
       messages: [
         {
           role: "system",
-          content: `You are an English tutor for a ${grade}th grade elementary school student. Provide simple and clear responses suitable for their level.`,
+          content: `You are an English tutor for a ${grade}th grade elementary school student (around 11-12 years old). Provide simple and clear responses suitable for their level. Use vocabulary and grammar appropriate for this age group.`,
         },
         { role: "user", content: message },
       ],
@@ -147,7 +141,6 @@ async function getAIResponse(message: string, grade: string): Promise<string> {
 }
 
 async function saveConversation(
-  supabase: SupabaseClient<Database>,
   userId: string,
   message: string,
   englishResponse: string,
@@ -155,53 +148,34 @@ async function saveConversation(
   koreanTranslation: string
 ) {
   try {
-    const { data: user, error } = await supabase
-      .from("auth.users")
-      .select("id")
-      .eq("id", userId)
-      .single();
-
-    if (error) {
-      throw new Error(error.message);
-    }
-
-    if (!user) {
-      throw new Error("User not found");
-    }
-
+    // Supabase auth.users 테이블에 접근하는 대신 직접 userId를 사용합니다.
     // 사용자 메시지 저장
-    const userConversation = await prisma.conversation.create({
+    await prisma.conversation.create({
       data: {
-        user_id: user.id,
+        user_id: userId,
         message,
         is_user_message: true,
+        translation: {
+          create: {
+            translated_message: englishMessage,
+            response: englishResponse,
+            translated_response: koreanTranslation,
+          },
+        },
       },
     });
 
     // AI 응답 저장
-    const aiConversation = await prisma.conversation.create({
+    await prisma.conversation.create({
       data: {
-        user_id: user.id,
+        user_id: userId,
         message: englishResponse,
         is_user_message: false,
-      },
-    });
-
-    // 사용자 메시지 번역 저장
-    await prisma.conversationTranslation.create({
-      data: {
-        conversation_id: userConversation.id,
-        translated_message: englishMessage,
-        response: englishResponse,
-        translated_response: koreanTranslation,
-      },
-    });
-
-    // AI 응답 번역 저장
-    await prisma.conversationTranslation.create({
-      data: {
-        conversation_id: aiConversation.id,
-        translated_message: koreanTranslation,
+        translation: {
+          create: {
+            translated_message: koreanTranslation,
+          },
+        },
       },
     });
   } catch (error) {

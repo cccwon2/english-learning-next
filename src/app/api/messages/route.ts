@@ -1,16 +1,15 @@
 import { NextResponse } from "next/server";
-import { createClient } from "@supabase/supabase-js";
+import { PrismaClient } from "@prisma/client";
 
-const supabase = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-);
+const prisma = new PrismaClient();
 
 export async function GET(req: Request) {
   const { searchParams } = new URL(req.url);
   const page = parseInt(searchParams.get("page") || "1");
   const limit = parseInt(searchParams.get("limit") || "20");
   const userId = searchParams.get("userId");
+
+  console.log("userId: ", userId);
 
   if (!userId) {
     return NextResponse.json({ error: "User ID is required" }, { status: 400 });
@@ -19,23 +18,25 @@ export async function GET(req: Request) {
   const offset = (page - 1) * limit;
 
   try {
-    const { data, error, count } = await supabase
-      .from("conversations")
-      .select("*, translation(*)", { count: "exact" })
-      .eq("user_id", userId)
-      .order("created_at", { ascending: false })
-      .range(offset, offset + limit - 1);
+    const [conversations, count] = await Promise.all([
+      prisma.conversation.findMany({
+        where: { user_id: userId },
+        include: { translation: true },
+        orderBy: { created_at: "desc" },
+        skip: offset,
+        take: limit,
+      }),
+      prisma.conversation.count({ where: { user_id: userId } }),
+    ]);
 
-    if (error) throw error;
-
-    const messages = data?.map((item) => ({
+    const messages = conversations.map((item) => ({
       id: item.id,
       content: item.message,
-      isUser: item.isUserMessage,
-      translation: item.translation?.translatedResponse,
+      isUser: item.is_user_message,
+      translation: item.translation?.translated_response,
     }));
 
-    const hasMore = count ? offset + limit < count : false;
+    const hasMore = offset + limit < count;
 
     return NextResponse.json({ messages, hasMore });
   } catch (error) {
@@ -44,5 +45,7 @@ export async function GET(req: Request) {
       { error: "Failed to fetch messages" },
       { status: 500 }
     );
+  } finally {
+    await prisma.$disconnect();
   }
 }
