@@ -26,6 +26,7 @@ export default function ChatInterface({ user }: ChatInterfaceProps) {
   const [isLoading, setIsLoading] = useState(false);
   const [page, setPage] = useState(1);
   const [hasMore, setHasMore] = useState(true);
+  const [isGeneratingResponse, setIsGeneratingResponse] = useState(false);
 
   const mediaRecorder = useRef<MediaRecorder | null>(null);
   const audioChunks = useRef<Blob[]>([]);
@@ -90,7 +91,7 @@ export default function ChatInterface({ user }: ChatInterfaceProps) {
     const newMessage: Message = { id: Date.now(), content, isUser: true };
     setMessages((prev) => [...prev, newMessage]);
     setInput("");
-    setIsLoading(true);
+    setIsGeneratingResponse(true);
 
     try {
       const response = await axios.post("/api/chat", {
@@ -131,6 +132,7 @@ export default function ChatInterface({ user }: ChatInterfaceProps) {
         ]);
       }
     } finally {
+      setIsGeneratingResponse(false);
       setIsLoading(false);
       scrollToBottom();
     }
@@ -229,6 +231,21 @@ export default function ChatInterface({ user }: ChatInterfaceProps) {
             )}
           </motion.div>
         ))}
+        {isGeneratingResponse && (
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.3 }}
+            className="p-2 rounded-lg bg-gray-100 max-w-[80%]"
+          >
+            <p className="text-gray-600">답변 생성 중...</p>
+            <motion.div
+              animate={{ rotate: 360 }}
+              transition={{ duration: 1, repeat: Infinity, ease: "linear" }}
+              className="inline-block w-4 h-4 border-t-2 border-b-2 border-gray-600 rounded-full mt-2"
+            />
+          </motion.div>
+        )}
         <div ref={messagesEndRef} />
       </div>
       <div className="p-4 border-t">
@@ -239,11 +256,12 @@ export default function ChatInterface({ user }: ChatInterfaceProps) {
             onChange={(e) => setInput(e.target.value)}
             className="flex-1 border rounded-l-lg p-2"
             placeholder="메시지를 입력하세요..."
+            disabled={isGeneratingResponse}
           />
           <button
             type="submit"
             className="bg-blue-500 text-white p-2 rounded-r-lg"
-            disabled={isLoading}
+            disabled={isLoading || isGeneratingResponse}
           >
             전송
           </button>
@@ -253,7 +271,7 @@ export default function ChatInterface({ user }: ChatInterfaceProps) {
             className={`ml-2 p-2 rounded-lg ${
               isRecording ? "bg-red-500" : "bg-green-500"
             } text-white`}
-            disabled={isLoading}
+            disabled={isLoading || isGeneratingResponse}
           >
             {isRecording ? "녹음 중지" : "음성 입력"}
           </button>
