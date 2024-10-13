@@ -6,10 +6,11 @@ import { motion } from "framer-motion";
 import { User } from "@supabase/supabase-js";
 
 interface Message {
-  id: number;
+  id: string;
   content: string;
   isUser: boolean;
   translation?: string;
+  createdAt: string;
 }
 
 interface ChatInterfaceProps {
@@ -21,7 +22,7 @@ export default function ChatInterface({ user }: ChatInterfaceProps) {
   const [input, setInput] = useState("");
   const [isRecording, setIsRecording] = useState(false);
   const [showTranslation, setShowTranslation] = useState<{
-    [key: number]: boolean;
+    [key: string]: boolean;
   }>({});
   const [isLoading, setIsLoading] = useState(false);
   const [page, setPage] = useState(1);
@@ -46,7 +47,13 @@ export default function ChatInterface({ user }: ChatInterfaceProps) {
         },
       });
       const newMessages = response.data.messages;
-      setMessages((prevMessages) => [...newMessages, ...prevMessages]);
+      setMessages((prevMessages) => {
+        const uniqueMessages = newMessages.filter(
+          (newMsg: Message) =>
+            !prevMessages.some((prevMsg) => prevMsg.id === newMsg.id)
+        );
+        return [...prevMessages, ...uniqueMessages];
+      });
       setHasMore(response.data.hasMore);
       setPage((prevPage) => prevPage + 1);
     } catch (error) {
@@ -88,7 +95,12 @@ export default function ChatInterface({ user }: ChatInterfaceProps) {
   };
 
   const sendMessage = async (content: string) => {
-    const newMessage: Message = { id: Date.now(), content, isUser: true };
+    const newMessage: Message = {
+      id: Date.now().toString(),
+      content,
+      isUser: true,
+      createdAt: new Date().toISOString(),
+    };
     setMessages((prev) => [...prev, newMessage]);
     setInput("");
     setIsGeneratingResponse(true);
@@ -99,35 +111,36 @@ export default function ChatInterface({ user }: ChatInterfaceProps) {
         userId: user.id,
       });
 
-      setMessages((prev) => [
-        ...prev,
-        {
-          id: Date.now(),
-          content: response.data.englishResponse,
-          isUser: false,
-          translation: response.data.koreanTranslation,
-        },
-      ]);
+      const aiMessage: Message = {
+        id: (Date.now() + 1).toString(),
+        content: response.data.englishResponse,
+        isUser: false,
+        translation: response.data.koreanTranslation,
+        createdAt: new Date().toISOString(),
+      };
+      setMessages((prev) => [...prev, aiMessage]);
     } catch (error) {
       console.error("Error sending message:", error);
       if (axios.isAxiosError(error)) {
         setMessages((prev) => [
           ...prev,
           {
-            id: Date.now(),
+            id: (Date.now() + 1).toString(),
             content: `오류: ${
               error.response?.data?.error || "알 수 없는 오류가 발생했습니다."
             }`,
             isUser: false,
+            createdAt: new Date().toISOString(),
           },
         ]);
       } else {
         setMessages((prev) => [
           ...prev,
           {
-            id: Date.now(),
+            id: (Date.now() + 1).toString(),
             content: "메시지 전송 중 오류가 발생했습니다.",
             isUser: false,
+            createdAt: new Date().toISOString(),
           },
         ]);
       }
@@ -185,7 +198,7 @@ export default function ChatInterface({ user }: ChatInterfaceProps) {
     setIsRecording(!isRecording);
   };
 
-  const toggleTranslation = (id: number) => {
+  const toggleTranslation = (id: string) => {
     setShowTranslation((prev) => ({ ...prev, [id]: !prev[id] }));
   };
 
@@ -214,13 +227,13 @@ export default function ChatInterface({ user }: ChatInterfaceProps) {
             } max-w-[80%]`}
           >
             <p className="break-words">{message.content}</p>
-            {!message.isUser && message.translation && (
+            {message.translation && !message.isUser && (
               <div>
                 <button
                   onClick={() => toggleTranslation(message.id)}
                   className="text-sm text-blue-500 mt-1"
                 >
-                  {showTranslation[message.id] ? "번역 숨기기" : "번역 보기"}
+                  {showTranslation[message.id] ? "원문 보기" : "번역 보기"}
                 </button>
                 {showTranslation[message.id] && (
                   <p className="text-sm text-gray-600 mt-1 break-words">
