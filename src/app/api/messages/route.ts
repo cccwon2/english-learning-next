@@ -22,7 +22,7 @@ export async function GET(req: Request) {
       prisma.conversation.findMany({
         where: { user_id: userId },
         include: { translation: true },
-        orderBy: { created_at: "desc" },
+        orderBy: { created_at: "asc" },
         skip: offset,
         take: limit,
       }),

@@ -46,7 +46,7 @@ export default function ChatInterface({ user }: ChatInterfaceProps) {
         },
       });
       const newMessages = response.data.messages;
-      setMessages((prevMessages) => [...prevMessages, ...newMessages]);
+      setMessages((prevMessages) => [...newMessages, ...prevMessages]);
       setHasMore(response.data.hasMore);
       setPage((prevPage) => prevPage + 1);
     } catch (error) {
