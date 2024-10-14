@@ -9,9 +9,7 @@
   {
     "message": "사용자 메시지",
     "userId": "사용자 ID",
-    "grade": "학년",
-    "classNumber": "반",
-    "name": "이름"
+    "grade": "학년"
   }
   ```
 - 응답:
@@ -40,7 +38,8 @@
         "id": "메시지 ID",
         "content": "메시지 내용",
         "isUser": true/false,
-        "translation": "번역된 내용"
+        "translation": "번역된 내용",
+        "createdAt": "생성 시간"
       }
     ],
     "hasMore": true/false
@@ -60,69 +59,56 @@
   }
   ```
 
-## 번역 API
+## 인증 API
 
-- 엔드포인트: `/api/translate`
+### 로그인
+
+- 엔드포인트: `/api/auth/signin`
 - 메소드: POST
 - 요청 본문:
   ```json
   {
-    "text": "번역할 텍스트",
-    "targetLang": "대상 언어 코드"
+    "email": "사용자 이메일",
+    "password": "비밀번호"
   }
   ```
 - 응답:
   ```json
   {
-    "translatedText": "번역된 텍스트"
+    "message": "로그인 성공",
+    "user": {
+      // 사용자 정보
+    }
   }
   ```
 
-## 사용자 정보 API
+### 회원가입
 
-- 엔드포인트: `/api/user`
-- 메소드: GET
-- 쿼리 파라미터:
-  - `name`: 사용자 이름
-  - `grade`: 학년
-  - `class`: 반
+- 엔드포인트: `/api/auth/signup`
+- 메소드: POST
+- 요청 본문:
+  ```json
+  {
+    "email": "사용자 이메일",
+    "password": "비밀번호"
+  }
+  ```
 - 응답:
   ```json
   {
-    "id": "사용자 ID",
-    "name": "사용자 이름",
-    "grade": "학년",
-    "class": "반",
-    "nameSuffix": "이름 접미사"
+    "message": "회원가입이 완료되었습니다. 이메일을 확인해 주세요."
   }
   ```
 
-## 대화 기록 API
+### 로그아웃
 
-- 엔드포인트: `/api/history`
-- 메소드: GET
-- 쿼리 파라미터:
-  - `userId`: 사용자 ID
-  - `page`: 페이지 번호 (기본값: 1)
-  - `limit`: 페이지당 대화 수 (기본값: 20)
+- 엔드포인트: `/api/auth/logout`
+- 메소드: POST
 - 응답:
   ```json
   {
-    "conversations": [
-      {
-        "id": "대화 ID",
-        "message": "대화 메시지",
-        "isUserMessage": true/false,
-        "createdAt": "생성 시간",
-        "translation": {
-          "translatedMessage": "번역된 메시지",
-          "response": "AI 응답",
-          "translatedResponse": "번역된 AI 응답",
-          "language": "언어"
-        }
-      }
-    ],
-    "hasMore": true/false
+    "success": true,
+    "message": "로그아웃 되었습니다."
   }
   ```
 

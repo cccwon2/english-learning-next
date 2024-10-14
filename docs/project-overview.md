@@ -21,12 +21,14 @@
 - AI: OpenAI GPT-4
 - 번역: DeepL API
 - 상태 관리: Jotai, React Query (TanStack Query)
-- UI 컴포넌트: Radix UI
+- UI 컴포넌트: Radix UI, shadcn/ui
 - 스타일링: Tailwind CSS
 - 애니메이션: Framer Motion
 - 국제화: next-i18next
 - 폼 관리: react-hook-form
 - 데이터 검증: Zod
+- 차트: Chart.js, react-chartjs-2
+- 날짜 관리: date-fns, react-day-picker
 
 ## 프로젝트 구조
 
