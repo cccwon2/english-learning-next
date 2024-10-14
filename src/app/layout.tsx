@@ -1,4 +1,5 @@
-import "../styles/globals.css";
+import Header from "@/components/Header";
+import "@/styles/globals.css";
 import type { Metadata } from "next";
 import { Providers } from "./providers";
 
@@ -15,7 +16,10 @@ export default function RootLayout({
   return (
     <html lang="ko">
       <body>
-        <Providers>{children}</Providers>
+        <Providers>
+          <Header />
+          {children}
+        </Providers>
       </body>
     </html>
   );

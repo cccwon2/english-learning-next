@@ -23,6 +23,7 @@
     "types": ["node"],
     "paths": {
       "@/*": ["./src/*"],
+      "@/styles/*": ["./src/styles/*"],
       "@/types/*": ["./src/types/*"],
       "@/lib/*": ["./src/lib/*"],
       "@/utils/*": ["./src/utils/*"],
