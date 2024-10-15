@@ -3,8 +3,10 @@
 import React, { useState, useRef, useEffect, useCallback } from "react";
 import axios from "axios";
 import { motion } from "framer-motion";
-import { User } from "@supabase/supabase-js";
-import { FiSend, FiMic } from "react-icons/fi"; // 아이콘 사용
+import { FiSend, FiMic } from "react-icons/fi";
+import { useAtom } from "jotai";
+import { userAtom } from "@/atoms/userAtom";
+import { useRouter } from "next/navigation";
 
 interface Message {
   id: string;
@@ -14,11 +16,10 @@ interface Message {
   createdAt: string;
 }
 
-interface ChatInterfaceProps {
-  user: User;
-}
+export default function ChatInterface() {
+  const [user] = useAtom(userAtom);
+  const router = useRouter();
 
-export default function ChatInterface({ user }: ChatInterfaceProps) {
   const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState("");
   const [isRecording, setIsRecording] = useState(false);
@@ -35,6 +36,12 @@ export default function ChatInterface({ user }: ChatInterfaceProps) {
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const observerRef = useRef<IntersectionObserver | null>(null);
   const loadingRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (!user) {
+      router.push("/auth/login");
+    }
+  }, [user, router]);
 
   const loadMessages = useCallback(async () => {
     if (isLoading || !hasMore || !user?.id) return;
@@ -96,6 +103,10 @@ export default function ChatInterface({ user }: ChatInterfaceProps) {
   };
 
   const sendMessage = async (content: string) => {
+    if (!user) {
+      router.push("/auth/login");
+      return;
+    }
     const newMessage: Message = {
       id: Date.now().toString(),
       content,
@@ -217,104 +228,111 @@ export default function ChatInterface({ user }: ChatInterfaceProps) {
   }, []);
 
   return (
-    <div
-      className="flex flex-col bg-sky-100 fixed inset-0 overflow-hidden"
-      style={{
-        top: "4rem",
-        height: "calc(var(--vh, 1vh) * 100 - 4rem)",
-      }}
-    >
-      {/* 메시지 목록 */}
-      <div className="flex-1 overflow-y-auto p-4 space-y-4 pb-20">
-        {messages.map((message) => (
-          <motion.div
-            key={message.id}
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.3 }}
-            className={`p-2 rounded-lg ${
-              message.isUser
-                ? "bg-yellow-400 ml-auto text-gray-800"
-                : "bg-white text-gray-800"
-            } max-w-[70%]`}
-          >
-            <p className="break-words">{message.content}</p>
-            {message.translation && !message.isUser && (
-              <div>
-                <button
-                  onClick={() => toggleTranslation(message.id)}
-                  className="text-sm text-blue-500 mt-1"
-                >
-                  {showTranslation[message.id] ? "원문 보기" : "번역 보기"}
-                </button>
-                {showTranslation[message.id] && (
-                  <p className="text-sm text-gray-600 mt-1 break-words">
-                    {message.translation}
-                  </p>
+    <>
+      {user ? (
+        <div
+          className="flex flex-col bg-sky-100 fixed inset-0 overflow-hidden"
+          style={{
+            top: "4rem",
+            height: "calc(var(--vh, 1vh) * 100 - 4rem)",
+          }}
+        >
+          {/* 메시지 목록 */}
+          <div className="flex-1 overflow-y-auto p-4 space-y-4 pb-20">
+            {messages.map((message) => (
+              <motion.div
+                key={message.id}
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.3 }}
+                className={`p-2 rounded-lg ${
+                  message.isUser
+                    ? "bg-yellow-400 ml-auto text-gray-800"
+                    : "bg-white text-gray-800"
+                } max-w-[70%]`}
+              >
+                <p className="break-words">{message.content}</p>
+                {message.translation && !message.isUser && (
+                  <div>
+                    <button
+                      onClick={() => toggleTranslation(message.id)}
+                      className="text-sm text-blue-500 mt-1"
+                    >
+                      {showTranslation[message.id] ? "원문 보기" : "번역 보기"}
+                    </button>
+                    {showTranslation[message.id] && (
+                      <p className="text-sm text-gray-600 mt-1 break-words">
+                        {message.translation}
+                      </p>
+                    )}
+                  </div>
                 )}
-              </div>
+              </motion.div>
+            ))}
+            {isGeneratingResponse && (
+              <motion.div
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.3 }}
+                className="p-2 rounded-lg bg-white max-w-[70%]"
+              >
+                <p className="text-gray-600">답변 생 중...</p>
+                <motion.div
+                  animate={{ rotate: 360 }}
+                  transition={{ duration: 1, repeat: Infinity, ease: "linear" }}
+                  className="inline-block w-4 h-4 border-t-2 border-b-2 border-gray-600 rounded-full mt-2"
+                />
+              </motion.div>
             )}
-          </motion.div>
-        ))}
-        {isGeneratingResponse && (
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.3 }}
-            className="p-2 rounded-lg bg-white max-w-[70%]"
-          >
-            <p className="text-gray-600">답변 생 중...</p>
-            <motion.div
-              animate={{ rotate: 360 }}
-              transition={{ duration: 1, repeat: Infinity, ease: "linear" }}
-              className="inline-block w-4 h-4 border-t-2 border-b-2 border-gray-600 rounded-full mt-2"
-            />
-          </motion.div>
-        )}
-        <div ref={messagesEndRef} />
-      </div>
+            <div ref={messagesEndRef} />
+          </div>
 
-      {/* 로딩 스피너 */}
-      {isLoading && (
-        <div className="absolute inset-0 flex items-center justify-center bg-gray-100 bg-opacity-50 z-20">
-          <motion.div
-            animate={{ rotate: 360 }}
-            transition={{ duration: 1, repeat: Infinity, ease: "linear" }}
-            className="w-12 h-12 border-t-4 border-b-4 border-blue-500 rounded-full"
-          />
+          {/* 로딩 스피너 */}
+          {isLoading && (
+            <div className="absolute inset-0 flex items-center justify-center bg-gray-100 bg-opacity-50 z-20">
+              <motion.div
+                animate={{ rotate: 360 }}
+                transition={{ duration: 1, repeat: Infinity, ease: "linear" }}
+                className="w-12 h-12 border-t-4 border-b-4 border-blue-500 rounded-full"
+              />
+            </div>
+          )}
+
+          {/* 입력창 */}
+          <div className="p-4 bg-sky-200 fixed bottom-0 left-0 right-0">
+            <form
+              onSubmit={handleSubmit}
+              className="flex items-center space-x-2"
+            >
+              <input
+                type="text"
+                value={input}
+                onChange={(e) => setInput(e.target.value)}
+                className="flex-1 p-2 rounded-full border border-gray-400 focus:outline-none focus:border-yellow-400"
+                placeholder="메시지를 입력하세요..."
+                disabled={isGeneratingResponse}
+              />
+              <button
+                type="submit"
+                className="bg-yellow-400 p-2 rounded-full text-gray-800"
+                disabled={isLoading || isGeneratingResponse}
+              >
+                <FiSend />
+              </button>
+              <button
+                type="button"
+                onClick={toggleRecording}
+                className={`p-2 rounded-full ${
+                  isRecording ? "bg-red-500" : "bg-yellow-400"
+                } text-gray-800`}
+                disabled={isLoading || isGeneratingResponse}
+              >
+                <FiMic />
+              </button>
+            </form>
+          </div>
         </div>
-      )}
-
-      {/* 입력창 */}
-      <div className="p-4 bg-sky-200 fixed bottom-0 left-0 right-0">
-        <form onSubmit={handleSubmit} className="flex items-center space-x-2">
-          <input
-            type="text"
-            value={input}
-            onChange={(e) => setInput(e.target.value)}
-            className="flex-1 p-2 rounded-full border border-gray-400 focus:outline-none focus:border-yellow-400"
-            placeholder="메시지를 입력하세요..."
-            disabled={isGeneratingResponse}
-          />
-          <button
-            type="submit"
-            className="bg-yellow-400 p-2 rounded-full text-gray-800"
-            disabled={isLoading || isGeneratingResponse}
-          >
-            <FiSend />
-          </button>
-          <button
-            type="button"
-            onClick={toggleRecording}
-            className={`p-2 rounded-full ${
-              isRecording ? "bg-red-500" : "bg-yellow-400"
-            } text-gray-800`}
-            disabled={isLoading || isGeneratingResponse}
-          >
-            <FiMic />
-          </button>
-        </form>
-      </div>
-    </div>
+      ) : null}
+    </>
   );
 }

@@ -1,38 +1,23 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useEffect } from "react";
 import { useRouter } from "next/navigation";
 import ChatInterface from "@/components/ChatInterface";
-import { createClient } from "@/utils/supabase/client";
-import { Session } from "@supabase/supabase-js";
+import { useAtom } from "jotai";
+import { userAtom } from "@/atoms/userAtom";
 import { motion } from "framer-motion";
 
-const supabase = createClient();
-
 export default function ChatPage() {
-  const [session, setSession] = useState<Session | null>(null);
-  const [loading, setLoading] = useState(true);
+  const [user] = useAtom(userAtom);
   const router = useRouter();
 
   useEffect(() => {
-    const {
-      data: { subscription },
-    } = supabase.auth.onAuthStateChange((_event, session) => {
-      setSession(session);
-      setLoading(false);
-      if (!session) router.push("/");
-    });
+    if (!user) {
+      router.push("/auth/signin");
+    }
+  }, [user, router]);
 
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      setSession(session);
-      setLoading(false);
-      if (!session) router.push("/");
-    });
-
-    return () => subscription.unsubscribe();
-  }, [router]);
-
-  if (loading) {
+  if (!user) {
     return (
       <div className="flex justify-center items-center min-h-screen">
         <motion.div
@@ -44,13 +29,9 @@ export default function ChatPage() {
     );
   }
 
-  if (!session) {
-    return null; // 로그인되지 않은 경우 아무것도 렌더링하지 않음 (리다이렉트 처리됨)
-  }
-
   return (
     <div className="container mx-auto p-4">
-      <ChatInterface user={session.user} />
+      <ChatInterface />
     </div>
   );
 }

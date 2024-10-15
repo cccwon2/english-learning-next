@@ -1,13 +1,14 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect } from "react";
 import { createClient } from "@/utils/supabase/client";
 import Auth from "@/app/auth/signin/page";
 import ChatInterface from "@/components/ChatInterface";
-import { Session } from "@supabase/supabase-js";
+import { useAtom } from "jotai";
+import { userAtom } from "@/atoms/userAtom";
 
 export default function Home() {
-  const [session, setSession] = useState<Session | null>(null);
+  const [user, setUser] = useAtom(userAtom);
 
   const supabase = createClient();
 
@@ -15,19 +16,27 @@ export default function Home() {
     const {
       data: { subscription },
     } = supabase.auth.onAuthStateChange((_event, session) => {
-      setSession(session);
+      setUser(
+        session?.user
+          ? { ...session.user, email: session.user.email || "" }
+          : null
+      );
     });
 
     supabase.auth.getSession().then(({ data: { session } }) => {
-      setSession(session);
+      setUser(
+        session?.user
+          ? { ...session.user, email: session.user.email || "" }
+          : null
+      );
     });
 
     return () => subscription.unsubscribe();
-  }, []);
+  }, [setUser]);
 
   return (
     <div className="container mx-auto p-4">
-      {!session ? <Auth /> : <ChatInterface user={session.user} />}
+      {!user ? <Auth /> : <ChatInterface />}
     </div>
   );
 }
