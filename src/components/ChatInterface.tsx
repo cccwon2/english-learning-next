@@ -276,7 +276,7 @@ export default function ChatInterface() {
                 transition={{ duration: 0.3 }}
                 className="p-2 rounded-lg bg-white max-w-[70%]"
               >
-                <p className="text-gray-600">답변 생 중...</p>
+                <p className="text-gray-600">답변 생성 중...</p>
                 <motion.div
                   animate={{ rotate: 360 }}
                   transition={{ duration: 1, repeat: Infinity, ease: "linear" }}
