@@ -220,12 +220,12 @@ export default function ChatInterface({ user }: ChatInterfaceProps) {
     <div
       className="flex flex-col bg-sky-100 fixed inset-0 overflow-hidden"
       style={{
-        top: "4rem", // 헤더의 높이
-        height: "calc(100vh - 4rem)", // 전�� 높이에서 헤더 높이를 뺌
+        top: "4rem",
+        height: "calc(var(--vh, 1vh) * 100 - 4rem)",
       }}
     >
       {/* 메시지 목록 */}
-      <div className="flex-1 overflow-y-auto p-4 space-y-4">
+      <div className="flex-1 overflow-y-auto p-4 space-y-4 pb-20">
         {messages.map((message) => (
           <motion.div
             key={message.id}
@@ -286,7 +286,7 @@ export default function ChatInterface({ user }: ChatInterfaceProps) {
       )}
 
       {/* 입력창 */}
-      <div className="p-4 bg-sky-200">
+      <div className="p-4 bg-sky-200 fixed bottom-0 left-0 right-0">
         <form onSubmit={handleSubmit} className="flex items-center space-x-2">
           <input
             type="text"
