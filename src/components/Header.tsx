@@ -1,40 +1,64 @@
 "use client";
 
 import { useState } from "react";
-import { useRouter, usePathname } from "next/navigation";
+import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
+import { useAtom } from "jotai";
+import { userAtom } from "@/atoms/userAtom";
+import Link from "next/link";
 
 const Header = () => {
   const [showConfirm, setShowConfirm] = useState(false);
   const router = useRouter();
-  const pathname = usePathname();
-
-  // 로그인 페이지와 회원가입 페이지에서는 Header를 렌더링하지 않음
-  if (pathname === "/auth/signin" || pathname === "/auth/signup") {
-    return null;
-  }
+  const [user, setUser] = useAtom(userAtom);
 
   const handleLogout = async (): Promise<void> => {
-    const response = await fetch("/api/auth/logout", { method: "POST" });
-    if (response.ok) {
-      router.push("/auth/signin");
+    try {
+      const response = await fetch("/api/auth/logout", { method: "POST" });
+      if (response.ok) {
+        setUser(null); // userAtom 초기화
+        router.push("/auth/signin");
+      } else {
+        throw new Error("로그아웃 실패");
+      }
+    } catch (error) {
+      console.error("로그아웃 중 오류 발생:", error);
+      alert("로그아웃 중 오류가 발생했습니다.");
     }
+    setShowConfirm(false);
   };
 
   return (
-    <header className="flex justify-between items-center p-4 bg-gray-100">
-      <h1 className="text-2xl font-bold">AI 영어 학습 앱</h1>
-      <Button
-        variant="outline"
-        size="sm"
-        onClick={() => setShowConfirm(true)}
-        className="p-2 border-gray-300 rounded-md font-bold hover:text-blue-500 hover:border-blue-500 cursor-pointer transition-colors duration-200"
-      >
-        로그아웃
-      </Button>
+    <header className="fixed top-0 left-0 right-0 flex justify-between items-center p-4 bg-sky-300 z-10">
+      <h1 className="text-2xl font-bold text-gray-800">AI 영어 학습 앱</h1>
+      <div className="flex items-center space-x-4">
+        {user ? (
+          <>
+            <span className="text-gray-800">{user.email}</span>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setShowConfirm(true)}
+              className="p-2 border-gray-800 text-gray-800 rounded-md font-bold hover:bg-sky-400 hover:text-white cursor-pointer transition-colors duration-200"
+            >
+              로그아웃
+            </Button>
+          </>
+        ) : (
+          <Link href="/auth/signin">
+            <Button
+              variant="outline"
+              size="sm"
+              className="text-white border-white hover:bg-sky-400"
+            >
+              로그인
+            </Button>
+          </Link>
+        )}
+      </div>
 
       {showConfirm && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center">
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
           <div className="bg-white p-6 rounded-lg">
             <p className="mb-4">로그아웃 하시겠습니까?</p>
             <div className="flex justify-end space-x-4">

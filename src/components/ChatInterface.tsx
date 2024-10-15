@@ -4,6 +4,7 @@ import React, { useState, useRef, useEffect, useCallback } from "react";
 import axios from "axios";
 import { motion } from "framer-motion";
 import { User } from "@supabase/supabase-js";
+import { FiSend, FiMic } from "react-icons/fi"; // 아이콘 사용
 
 interface Message {
   id: string;
@@ -202,20 +203,29 @@ export default function ChatInterface({ user }: ChatInterfaceProps) {
     setShowTranslation((prev) => ({ ...prev, [id]: !prev[id] }));
   };
 
+  // 새로운 useEffect 추가
+  useEffect(() => {
+    const adjustHeight = () => {
+      const vh = window.innerHeight * 0.01;
+      document.documentElement.style.setProperty("--vh", `${vh}px`);
+    };
+
+    adjustHeight();
+    window.addEventListener("resize", adjustHeight);
+
+    return () => window.removeEventListener("resize", adjustHeight);
+  }, []);
+
   return (
-    <div className="flex flex-col h-screen">
+    <div
+      className="flex flex-col bg-sky-100 fixed inset-0 overflow-hidden"
+      style={{
+        top: "4rem", // 헤더의 높이
+        height: "calc(100vh - 4rem)", // 전�� 높이에서 헤더 높이를 뺌
+      }}
+    >
+      {/* 메시지 목록 */}
       <div className="flex-1 overflow-y-auto p-4 space-y-4">
-        {hasMore && (
-          <div ref={loadingRef} className="text-center">
-            {isLoading && (
-              <motion.div
-                animate={{ rotate: 360 }}
-                transition={{ duration: 1, repeat: Infinity, ease: "linear" }}
-                className="inline-block w-6 h-6 border-t-2 border-b-2 border-gray-600 rounded-full"
-              />
-            )}
-          </div>
-        )}
         {messages.map((message) => (
           <motion.div
             key={message.id}
@@ -223,8 +233,10 @@ export default function ChatInterface({ user }: ChatInterfaceProps) {
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.3 }}
             className={`p-2 rounded-lg ${
-              message.isUser ? "bg-blue-100 ml-auto" : "bg-gray-100"
-            } max-w-[80%]`}
+              message.isUser
+                ? "bg-yellow-400 ml-auto text-gray-800"
+                : "bg-white text-gray-800"
+            } max-w-[70%]`}
           >
             <p className="break-words">{message.content}</p>
             {message.translation && !message.isUser && (
@@ -249,9 +261,9 @@ export default function ChatInterface({ user }: ChatInterfaceProps) {
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.3 }}
-            className="p-2 rounded-lg bg-gray-100 max-w-[80%]"
+            className="p-2 rounded-lg bg-white max-w-[70%]"
           >
-            <p className="text-gray-600">답변 생성 중...</p>
+            <p className="text-gray-600">답변 생 중...</p>
             <motion.div
               animate={{ rotate: 360 }}
               transition={{ duration: 1, repeat: Infinity, ease: "linear" }}
@@ -261,32 +273,45 @@ export default function ChatInterface({ user }: ChatInterfaceProps) {
         )}
         <div ref={messagesEndRef} />
       </div>
-      <div className="p-4 border-t">
-        <form onSubmit={handleSubmit} className="flex">
+
+      {/* 로딩 스피너 */}
+      {isLoading && (
+        <div className="absolute inset-0 flex items-center justify-center bg-gray-100 bg-opacity-50 z-20">
+          <motion.div
+            animate={{ rotate: 360 }}
+            transition={{ duration: 1, repeat: Infinity, ease: "linear" }}
+            className="w-12 h-12 border-t-4 border-b-4 border-blue-500 rounded-full"
+          />
+        </div>
+      )}
+
+      {/* 입력창 */}
+      <div className="p-4 bg-sky-200">
+        <form onSubmit={handleSubmit} className="flex items-center space-x-2">
           <input
             type="text"
             value={input}
             onChange={(e) => setInput(e.target.value)}
-            className="flex-1 border rounded-l-lg p-2"
+            className="flex-1 p-2 rounded-full border border-gray-400 focus:outline-none focus:border-yellow-400"
             placeholder="메시지를 입력하세요..."
             disabled={isGeneratingResponse}
           />
           <button
             type="submit"
-            className="bg-blue-500 text-white p-2 rounded-r-lg"
+            className="bg-yellow-400 p-2 rounded-full text-gray-800"
             disabled={isLoading || isGeneratingResponse}
           >
-            전송
+            <FiSend />
           </button>
           <button
             type="button"
             onClick={toggleRecording}
-            className={`ml-2 p-2 rounded-lg ${
-              isRecording ? "bg-red-500" : "bg-green-500"
-            } text-white`}
+            className={`p-2 rounded-full ${
+              isRecording ? "bg-red-500" : "bg-yellow-400"
+            } text-gray-800`}
             disabled={isLoading || isGeneratingResponse}
           >
-            {isRecording ? "녹음 중지" : "음성 입력"}
+            <FiMic />
           </button>
         </form>
       </div>

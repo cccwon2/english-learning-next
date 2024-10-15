@@ -13,6 +13,9 @@ import {
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/utils/supabase/client";
+import { useSetAtom } from "jotai";
+import { userAtom } from "@/atoms/userAtom";
+import toast from "react-hot-toast";
 
 export default function SignIn() {
   const [loading, setLoading] = useState(false);
@@ -20,13 +23,14 @@ export default function SignIn() {
   const [password, setPassword] = useState("");
   const router = useRouter();
   const supabase = createClient();
+  const setUser = useSetAtom(userAtom);
 
   const handleSignIn = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     setLoading(true);
 
     try {
-      const { error } = await supabase.auth.signInWithPassword({
+      const { data, error } = await supabase.auth.signInWithPassword({
         email,
         password,
       });
@@ -35,14 +39,22 @@ export default function SignIn() {
         throw error;
       }
 
-      alert("로그인에 성공했습니다.");
+      if (data.user) {
+        setUser({
+          id: data.user.id,
+          email: data.user.email!,
+          // 필요한 다른 사용자 정보 설정
+        });
+      }
+
+      toast.success("로그인에 성공했습니다.");
       router.push("/chat");
       router.refresh(); // 세션 상태를 새로고침합니다.
     } catch (error) {
       if (error instanceof Error) {
-        alert(error.message);
+        toast.error(error.message);
       } else {
-        alert("알 수 없는 오류가 발생했습니다.");
+        toast.error("알 수 없는 오류가 발생했습니다.");
       }
     } finally {
       setLoading(false);

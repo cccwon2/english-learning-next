@@ -40,7 +40,7 @@ export async function POST(request: Request) {
       console.log("Supabase auth.user id: ", data.user.id);
 
       return NextResponse.json(
-        { message: "회원가입이 완료되었습니다. 이메일을 확인해 주세요." },
+        { message: "회원가입이 완료되었습니다." },
         { status: 201 }
       );
     } catch (error: any) {

@@ -12,15 +12,16 @@ import {
 } from "@/components/ui/card";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
+import toast from "react-hot-toast";
 
-export default function SignIn() {
+export default function SignUp() {
   const [loading, setLoading] = useState(false);
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
   const router = useRouter();
 
-  const handleSignIn = async (e: React.FormEvent<HTMLFormElement>) => {
+  const handleSignUp = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     setLoading(true);
 
@@ -42,14 +43,13 @@ export default function SignIn() {
         throw new Error(error.message);
       }
 
-      alert("회원가입에 성공했습니다.");
-      // 회원가입 성공 후 로그인 페이지로 리다이렉트
+      toast.success("회원가입에 성공했습니다. 로그인 해주세요.");
       router.push("/auth/signin");
     } catch (error) {
       if (error instanceof Error) {
-        alert(error.message);
+        toast.error(error.message);
       } else {
-        alert("알 수 없는 오류가 발생했습니다.");
+        toast.error("알 수 없는 오류가 발생했습니다.");
       }
     } finally {
       setLoading(false);
@@ -65,7 +65,7 @@ export default function SignIn() {
           </CardTitle>
         </CardHeader>
         <CardContent>
-          <form onSubmit={handleSignIn}>
+          <form onSubmit={handleSignUp}>
             <div className="space-y-4">
               <Input
                 type="email"
